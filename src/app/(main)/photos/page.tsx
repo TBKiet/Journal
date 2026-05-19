@@ -75,9 +75,6 @@ export default function PhotosPage() {
       >
         <p className="section-kicker">Gallery</p>
         <h1 className="mt-1 font-heading text-4xl tracking-[-0.04em]">Ảnh</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Một bức tường nhỏ cho những ngày đẹp trời, bữa ăn ngon, góc phố quen và cả những khoảnh khắc không cần chú thích dài.
-        </p>
       </motion.div>
 
       <div className="columns-2 gap-3 space-y-3 sm:columns-3 lg:columns-4 xl:columns-5">

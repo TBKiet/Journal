@@ -148,9 +148,6 @@ export default function JournalPage() {
           <h1 className="mt-1 font-heading text-4xl tracking-[-0.04em] text-foreground">
             Nhật ký
           </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Mỗi entry là một mảnh ký ức. Lọc theo người viết, tâm trạng hoặc thời gian để xem lại từng đoạn của câu chuyện.
-          </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1 rounded-full border border-border/70 bg-background/80 p-1">

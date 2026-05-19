@@ -119,9 +119,6 @@ export default function WishlistPage() {
           <div>
             <p className="section-kicker">Shared wishlist</p>
             <h1 className="mt-1 font-heading text-4xl tracking-[-0.04em]">Wish list chung</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Nơi lưu lại những quán ăn, điểm đến, chỗ nghỉ và bất kỳ nơi nào hai bạn muốn thử cùng nhau.
-            </p>
           </div>
           <Button size="lg" render={<Link href="/wishlist/new" />}>
             <Plus className="size-4" />

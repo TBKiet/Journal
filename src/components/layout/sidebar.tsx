@@ -21,7 +21,6 @@ export function Sidebar() {
           <Link href="/home" className="mt-2 block font-heading text-[2rem] leading-none text-sidebar-foreground tracking-[-0.03em]">
             Our Journal
           </Link>
-          <p className="mt-2 text-sm text-muted-foreground">Một nơi mềm mại để giữ lại những ngày bình thường.</p>
         </div>
 
         <nav className="flex flex-1 flex-col gap-1.5">
@@ -56,7 +55,6 @@ export function Sidebar() {
               </Avatar>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-sidebar-foreground truncate">Us</p>
-                <p className="text-xs text-muted-foreground">365 trang nhỏ, 1 câu chuyện lớn</p>
               </div>
             </div>
             <button

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { getCurrentUser, getTodayPrompt, getJournalEntries, getUpcomingPlans, type JournalEntry, type Plan, type CouplePrompt } from "@/lib/data";
+import { getCurrentUser, getTodayPrompt, getJournalEntries, getWishlistPlaces, type JournalEntry, type WishlistPlace, type CouplePrompt } from "@/lib/data";
 
 const RELATIONSHIP_START = new Date("2024-02-14");
 
@@ -39,7 +39,7 @@ export default function HomePage() {
   const [currentUser, setCurrentUser] = useState<"BK" | "Bi">("BK");
   const [todayPrompt, setTodayPrompt] = useState<CouplePrompt | undefined>(undefined);
   const [recentEntries, setRecentEntries] = useState<JournalEntry[]>([]);
-  const [upcomingPlans, setUpcomingPlans] = useState<Plan[]>([]);
+  const [wishlistPlaces, setWishlistPlaces] = useState<WishlistPlace[]>([]);
   const [loading, setLoading] = useState(true);
   const mountedRef = useRef(true);
   const daysTogether = getDaysTogether();
@@ -71,9 +71,8 @@ export default function HomePage() {
       .catch(console.error)
       .finally(done);
 
-    // Plans filtered at DB level — no client-side filter needed
-    getUpcomingPlans(3)
-      .then((plans) => { if (mountedRef.current) setUpcomingPlans(plans); })
+    getWishlistPlaces()
+      .then((places) => { if (mountedRef.current) setWishlistPlaces(places.filter((place) => place.status !== "archived").slice(0, 3)); })
       .catch(console.error)
       .finally(done);
 
@@ -95,9 +94,6 @@ export default function HomePage() {
             <h1 className="font-heading text-4xl leading-none tracking-[-0.04em] text-foreground sm:text-5xl">
               Xin chào {currentUser}.
             </h1>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">
-              Đây là góc nhỏ để giữ lại những ngày bình thường, những điều đáng yêu và cả những kế hoạch đang chờ hai người thực hiện.
-            </p>
           </div>
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             <div className="rounded-[1.25rem] border border-border/70 bg-background/75 p-4">
@@ -264,11 +260,11 @@ export default function HomePage() {
         <section className="flex flex-col gap-3">
           <div className="flex items-end justify-between">
             <div>
-              <p className="section-kicker">Plans</p>
-              <h2 className="mt-1 font-heading text-3xl tracking-[-0.03em]">Sắp tới</h2>
+              <p className="section-kicker">Wish list</p>
+              <h2 className="mt-1 font-heading text-3xl tracking-[-0.03em]">Wish</h2>
             </div>
-            {upcomingPlans.length > 0 && (
-              <Link href="/plans" className="text-sm font-semibold text-primary hover:underline underline-offset-4">
+            {wishlistPlaces.length > 0 && (
+              <Link href="/wishlist" className="text-sm font-semibold text-primary hover:underline underline-offset-4">
                 Xem tất cả
               </Link>
             )}
@@ -279,32 +275,35 @@ export default function HomePage() {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-center py-8">
                 <span className="text-sm text-muted-foreground animate-pulse">Đang tải...</span>
               </motion.div>
-            ) : upcomingPlans.length === 0 ? (
+            ) : wishlistPlaces.length === 0 ? (
               <div className="flex flex-col items-center gap-4 px-4 py-10 text-center">
-                <span className="text-5xl">📋</span>
-                <p className="max-w-xs text-sm leading-6 text-muted-foreground">Chưa có kế hoạch nào. Thêm một cuộc hẹn nho nhỏ để cả hai có thứ để mong.</p>
-                <Button variant="outline" render={<Link href="/plans/new" />}>➕ Thêm kế hoạch</Button>
+                <span className="text-5xl">🗺️</span>
+                <p className="max-w-xs text-sm leading-6 text-muted-foreground">Chưa có địa điểm nào trong wish list.</p>
+                <Button variant="outline" render={<Link href="/wishlist/new" />}>➕ Thêm địa điểm</Button>
               </div>
             ) : (
-              upcomingPlans.map((plan, idx) => (
+              wishlistPlaces.map((place, idx) => (
                 <motion.div
-                  key={plan.id}
+                  key={place.id}
                   initial={{ opacity: 0, y: 16, scale: 0.97 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   transition={{ delay: idx * 0.08, type: "spring", stiffness: 280, damping: 24 }}
                 >
-                  <Link href="/plans">
+                  <Link href="/wishlist">
                     <div className="rounded-[1.25rem] border border-border/70 bg-background/80 px-4 py-4 transition-colors hover:bg-background">
                       <div className="flex items-start gap-3">
-                        <span className="mt-0.5 text-2xl" aria-hidden>📍</span>
+                        <span className="mt-0.5 text-2xl" aria-hidden>
+                          {place.category === "travel" ? "✈️" : place.category === "food" ? "🍜" : place.category === "cafe" ? "☕" : place.category === "stay" ? "🏨" : "✨"}
+                        </span>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-foreground">{plan.title}</p>
-                          <p className="mt-1 text-xs text-muted-foreground">{formatDate(plan.date)}</p>
-                          {plan.location && (
-                            <p className="mt-3 text-sm text-muted-foreground">{plan.location}</p>
+                          <p className="text-sm font-semibold text-foreground">{place.title}</p>
+                          {place.address && (
+                            <p className="mt-1 text-xs text-muted-foreground">{place.address}</p>
                           )}
                         </div>
-                        <Badge variant="secondary">Sắp tới</Badge>
+                        <Badge variant="secondary">
+                          {place.status === "want_to_go" ? "Muốn đi" : place.status === "booked" ? "Đã đặt" : place.status === "visited" ? "Đã đi" : "Lưu trữ"}
+                        </Badge>
                       </div>
                     </div>
                   </Link>
