@@ -109,7 +109,7 @@ export default function HomePage() {
         <p className="text-sm font-semibold text-muted-foreground tracking-wide">
           👋 Xin chào {currentUser === "BK" ? "BK" : "Bi"}!
         </p>
-        <div className="inline-flex items-center gap-1.5 rounded-full bg-accent/15 px-4 py-1.5 text-sm font-medium text-accent">
+        <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
           <span>💕</span>
           <span>
             {daysTogether} ngày bên nhau · Còn {daysUntil} ngày đến kỷ niệm
