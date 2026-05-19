@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, ExternalLink, MapPin, Plus, Sparkles } from "lucide-react";
+import { CalendarDays, ExternalLink, MapPin, Pencil, Plus, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -281,6 +281,10 @@ export default function WishlistPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" render={<Link href={`/wishlist/${place.id}/edit`} />}>
+                        <Pencil className="size-3.5" />
+                        Sửa
+                      </Button>
                       {place.mapUrl && (
                         <Button variant="outline" size="sm" render={<a href={place.mapUrl} target="_blank" rel="noreferrer" />}>
                           <ExternalLink className="size-3.5" />

@@ -507,6 +507,30 @@ export async function getWishlistPlaces(): Promise<WishlistPlace[]> {
   }));
 }
 
+export async function getWishlistPlace(id: string): Promise<WishlistPlace | undefined> {
+  const { data, error } = await supabase()
+    .from("wishlist_places")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) return undefined;
+
+  return {
+    id: data.id,
+    title: data.title,
+    category: data.category as WishlistPlace["category"],
+    plannedDate: data.planned_date ?? undefined,
+    address: data.address ?? undefined,
+    description: data.description ?? undefined,
+    imageUrl: data.image_url ?? undefined,
+    mapUrl: data.map_url ?? undefined,
+    status: data.status as WishlistPlace["status"],
+    createdBy: data.created_by as Author | undefined,
+    createdAt: data.created_at ?? undefined,
+  };
+}
+
 export async function addWishlistPlace(
   place: Omit<WishlistPlace, "id" | "createdAt">
 ): Promise<WishlistPlace> {
@@ -553,11 +577,11 @@ export async function updateWishlistPlace(
 
   if (updates.title !== undefined) payload.title = updates.title;
   if (updates.category !== undefined) payload.category = updates.category;
-  if (updates.plannedDate !== undefined) payload.planned_date = updates.plannedDate ?? null;
-  if (updates.address !== undefined) payload.address = updates.address ?? null;
-  if (updates.description !== undefined) payload.description = updates.description ?? null;
-  if (updates.imageUrl !== undefined) payload.image_url = updates.imageUrl ?? null;
-  if (updates.mapUrl !== undefined) payload.map_url = updates.mapUrl ?? null;
+  if (updates.plannedDate !== undefined) payload.planned_date = updates.plannedDate || null;
+  if (updates.address !== undefined) payload.address = updates.address || null;
+  if (updates.description !== undefined) payload.description = updates.description || null;
+  if (updates.imageUrl !== undefined) payload.image_url = updates.imageUrl || null;
+  if (updates.mapUrl !== undefined) payload.map_url = updates.mapUrl || null;
   if (updates.status !== undefined) payload.status = updates.status;
   if (updates.createdBy !== undefined) payload.created_by = updates.createdBy ?? null;
 
