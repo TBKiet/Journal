@@ -70,6 +70,7 @@ export interface WishlistPlace {
   id: string;
   title: string;
   category: "travel" | "food" | "cafe" | "stay" | "other";
+  plannedDate?: string;
   address?: string;
   description?: string;
   imageUrl?: string;
@@ -495,6 +496,7 @@ export async function getWishlistPlaces(): Promise<WishlistPlace[]> {
     id: item.id,
     title: item.title,
     category: item.category as WishlistPlace["category"],
+    plannedDate: item.planned_date ?? undefined,
     address: item.address ?? undefined,
     description: item.description ?? undefined,
     imageUrl: item.image_url ?? undefined,
@@ -511,6 +513,7 @@ export async function addWishlistPlace(
   const payload = {
     title: place.title,
     category: place.category,
+    planned_date: place.plannedDate ?? null,
     address: place.address ?? null,
     description: place.description ?? null,
     image_url: place.imageUrl ?? null,
@@ -531,6 +534,7 @@ export async function addWishlistPlace(
     id: data.id,
     title: data.title,
     category: data.category as WishlistPlace["category"],
+    plannedDate: data.planned_date ?? undefined,
     address: data.address ?? undefined,
     description: data.description ?? undefined,
     imageUrl: data.image_url ?? undefined,
@@ -549,6 +553,7 @@ export async function updateWishlistPlace(
 
   if (updates.title !== undefined) payload.title = updates.title;
   if (updates.category !== undefined) payload.category = updates.category;
+  if (updates.plannedDate !== undefined) payload.planned_date = updates.plannedDate ?? null;
   if (updates.address !== undefined) payload.address = updates.address ?? null;
   if (updates.description !== undefined) payload.description = updates.description ?? null;
   if (updates.imageUrl !== undefined) payload.image_url = updates.imageUrl ?? null;
@@ -569,6 +574,7 @@ export async function updateWishlistPlace(
     id: data.id,
     title: data.title,
     category: data.category as WishlistPlace["category"],
+    plannedDate: data.planned_date ?? undefined,
     address: data.address ?? undefined,
     description: data.description ?? undefined,
     imageUrl: data.image_url ?? undefined,

@@ -339,7 +339,9 @@ export default function HomePage() {
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold text-foreground">{place.title}</p>
-                          {place.address && (
+                          {place.plannedDate ? (
+                            <p className="mt-1 text-xs text-muted-foreground">{formatDate(place.plannedDate)}</p>
+                          ) : place.address && (
                             <p className="mt-1 text-xs text-muted-foreground">{place.address}</p>
                           )}
                         </div>

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ExternalLink, MapPin, Plus, Sparkles } from "lucide-react";
+import { CalendarDays, ExternalLink, MapPin, Plus, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -106,6 +106,15 @@ export default function WishlistPage() {
   const handleStatusChange = async (placeId: string, status: WishlistPlace["status"]) => {
     await updateWishlistPlace(placeId, { status });
     await refresh();
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(`${dateStr}T00:00:00`);
+    return date.toLocaleDateString("vi-VN", {
+      day: "numeric",
+      month: "numeric",
+      year: "numeric",
+    });
   };
 
   return (
@@ -234,6 +243,13 @@ export default function WishlistPage() {
                   </CardHeader>
 
                   <CardContent className="flex flex-col gap-4">
+                    {place.plannedDate && (
+                      <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                        <CalendarDays className="mt-0.5 size-4 shrink-0" />
+                        <span>Ngày dự kiến: {formatDate(place.plannedDate)}</span>
+                      </div>
+                    )}
+
                     {place.address && (
                       <div className="flex items-start gap-2 text-sm text-muted-foreground">
                         <MapPin className="mt-0.5 size-4 shrink-0" />
@@ -274,7 +290,7 @@ export default function WishlistPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        render={<Link href={`/plans/new?title=${encodeURIComponent(place.title)}&location=${encodeURIComponent(place.address ?? "")}&text=${encodeURIComponent(place.description ?? "")}`} />}
+                        render={<Link href={`/plans/new?title=${encodeURIComponent(place.title)}&location=${encodeURIComponent(place.address ?? "")}&text=${encodeURIComponent(place.description ?? "")}&date=${encodeURIComponent(place.plannedDate ?? "")}`} />}
                       >
                         <Sparkles className="size-3.5" />
                         Tạo kế hoạch

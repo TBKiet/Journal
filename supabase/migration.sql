@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS wishlist_places (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title VARCHAR(255) NOT NULL,
   category VARCHAR(20) NOT NULL CHECK (category IN ('travel', 'food', 'cafe', 'stay', 'other')),
+  planned_date DATE,
   address TEXT,
   description TEXT,
   image_url TEXT,
@@ -73,6 +74,9 @@ CREATE TABLE IF NOT EXISTS wishlist_places (
   created_by VARCHAR(2) CHECK (created_by IN ('BK', 'Bi')),
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+ALTER TABLE wishlist_places
+  ADD COLUMN IF NOT EXISTS planned_date DATE;
 
 -- Ngày quan trọng
 CREATE TABLE IF NOT EXISTS important_dates (

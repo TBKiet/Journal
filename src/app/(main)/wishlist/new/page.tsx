@@ -31,6 +31,7 @@ export default function NewWishlistPage() {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<WishlistPlace["category"]>("travel");
   const [status, setStatus] = useState<WishlistPlace["status"]>("want_to_go");
+  const [plannedDate, setPlannedDate] = useState("");
   const [address, setAddress] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -53,6 +54,7 @@ export default function NewWishlistPage() {
       await addWishlistPlace({
         title: title.trim(),
         category,
+        plannedDate: plannedDate || undefined,
         address: address.trim() || undefined,
         description: description.trim() || undefined,
         imageUrl: imageUrl.trim() || undefined,
@@ -137,13 +139,24 @@ export default function NewWishlistPage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-semibold text-foreground">📍 Địa chỉ</label>
-              <Input
-                placeholder="Tên quán, khu vực, thành phố..."
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-              />
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-semibold text-foreground">📅 Ngày dự kiến</label>
+                <Input
+                  type="date"
+                  value={plannedDate}
+                  onChange={(e) => setPlannedDate(e.target.value)}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-semibold text-foreground">📍 Địa chỉ</label>
+                <Input
+                  placeholder="Tên quán, khu vực, thành phố..."
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                />
+              </div>
             </div>
 
             <div className="flex flex-col gap-1.5">

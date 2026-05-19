@@ -30,12 +30,13 @@ function NewPlanForm() {
   const searchParams = useSearchParams();
   const prefill = useMemo(() => ({
     title: searchParams.get("title") ?? "",
+    date: searchParams.get("date") ?? "",
     location: searchParams.get("location") ?? "",
     text: searchParams.get("text") ?? "",
   }), [searchParams]);
 
   const [title, setTitle] = useState(prefill.title);
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(prefill.date);
   const [location, setLocation] = useState(prefill.location);
   const [note, setNote] = useState(prefill.text);
   const [status, setStatus] = useState<"planned" | "done" | "cancelled">("planned");
