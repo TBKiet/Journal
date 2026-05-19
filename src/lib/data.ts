@@ -354,6 +354,25 @@ export async function getPlans(): Promise<Plan[]> {
   }));
 }
 
+export async function getUpcomingPlans(limit = 3): Promise<Plan[]> {
+  const { data, error } = await supabase()
+    .from("plans")
+    .select("*")
+    .eq("status", "planned")
+    .order("date", { ascending: true })
+    .limit(limit);
+
+  if (error) throw error;
+  return (data ?? []).map((p) => ({
+    id: p.id,
+    title: p.title,
+    date: p.date,
+    location: p.location ?? undefined,
+    note: p.note ?? undefined,
+    status: p.status as Plan["status"],
+  }));
+}
+
 export async function addPlan(plan: Omit<Plan, "id">): Promise<Plan> {
   const { data, error } = await supabase()
     .from("plans")
@@ -461,18 +480,183 @@ export async function getDateEntry(id: string): Promise<DateInfo | undefined> {
 
 // ─── Couple Prompts ───────────────────────────────────────────────────
 
-export async function getTodayPrompt(): Promise<CouplePrompt | undefined> {
+const POOL_EMOJIS = ["💭", "💕", "🌈", "✨", "🎯", "🌙", "💝", "🎬", "🦋", "🌸", "💫", "🌟", "🎵", "📖", "☕", "🎁", "🌻", "🍀", "💎", "🔥"];
+
+const QUESTION_POOL: string[] = [
+  // ── Về tình yêu & cảm xúc ──
+  "Khoảnh khắc nào trong ngày hôm nay khiến bạn nghĩ đến đối phương nhất?",
+  "Bạn đã yêu đối phương từ khoảnh khắc nào? Hãy kể lại cảm giác lúc đó.",
+  "Điều gì ở đối phương khiến bạn cảm thấy an toàn và bình yên nhất?",
+  "Nếu phải dùng 3 từ để miêu tả tình yêu của hai đứa, bạn sẽ chọn từ gì?",
+  "Lần gần nhất bạn cảm thấy thật sự tự hào về đối phương là khi nào?",
+  "Có điều gì bạn muốn nói với đối phương từ lâu nhưng chưa dám nói không?",
+  "Bạn nghĩ tình yêu của hai đứa đã thay đổi như thế nào kể từ lúc mới quen?",
+  "Làm thế nào bạn biết đối phương đang buồn dù họ không nói ra?",
+  "Điều gì khiến bạn cười nhiều nhất khi ở bên đối phương?",
+  "Khoảnh khắc nào bạn nhận ra 'đây chính là người mình muốn ở bên'?",
+
+  // ── Về quá khứ & kỷ niệm ──
+  "Kỷ niệm nào về lần đầu gặp mặt khiến bạn nhớ mãi?",
+  "Chuyến đi chơi nào của hai đứa để lại ấn tượng sâu sắc nhất trong lòng bạn?",
+  "Lần đối phương khiến bạn bất ngờ nhất là gì?",
+  "Có khoảnh khắc ngượng ngùng hay hài hước nào giữa hai đứa mà giờ nghĩ lại vẫn cười không?",
+  "Món quà đầu tiên đối phương tặng bạn là gì? Bạn còn giữ không?",
+  "Hai đứa đã cùng nhau vượt qua khó khăn gì? Bài học rút ra là gì?",
+  "Kỷ niệm nào của hai đứa mà bạn muốn kể cho con cháu nghe nhất?",
+  "Một lần bạn đã làm sai và được đối phương tha thứ — chuyện gì đã xảy ra?",
+  "Lần đầu bạn khóc vì đối phương là khi nào?",
+  "Bài hát nào gắn liền với một kỷ niệm của hai đứa? Đó là kỷ niệm gì?",
+
+  // ── Về hiện tại & đời sống ──
+  "Nếu ngày mai thức dậy và bạn có một ngày hoàn toàn rảnh rỗi bên đối phương, bạn muốn làm gì?",
+  "Điều nhỏ nhặt nhất đối phương làm hôm nay khiến bạn thấy vui là gì?",
+  "Bữa ăn nào hai đứa cùng nấu hoặc cùng ăn gần đây khiến bạn nhớ nhất?",
+  "Gần đây bạn có phát hiện điều gì mới mẻ về đối phương không?",
+  "Hôm nay bạn đã nghĩ về đối phương bao nhiêu lần? Lần nào rõ nhất?",
+  "Có thói quen hàng ngày nào của đối phương khiến bạn thấy dễ thương không?",
+  "Nếu có một ngày hoán đổi vai trò cho đối phương, bạn nghĩ điều gì sẽ bất ngờ nhất?",
+  "Một điều bạn muốn cám ơn đối phương vì đã làm hôm nay là gì?",
+  "Khung giờ nào trong ngày bạn thấy nhớ đối phương nhất?",
+  "Thời tiết hôm nay khiến bạn liên tưởng đến kỷ niệm nào với đối phương?",
+
+  // ── Về tương lai & ước mơ ──
+  "Bạn hình dung cuộc sống của hai đứa 10 năm nữa sẽ như thế nào?",
+  "Nếu trúng số 10 tỷ, hai đứa sẽ làm gì đầu tiên?",
+  "Đám cưới trong mơ của bạn sẽ như thế nào? Có bao nhiêu khách mời? Ở đâu?",
+  "Bạn muốn cùng đối phương đi du lịch đến đâu nhất? Vì sao?",
+  "Có điều gì bạn muốn cùng đối phương học hoặc trải nghiệm trong năm nay?",
+  "Nếu hai đứa có một ngôi nhà chung, nó sẽ ở đâu và có gì đặc biệt?",
+  "Bạn muốn đối phương sẽ trở thành người như thế nào trong 5 năm tới?",
+  "Có một ước mơ nào từ nhỏ mà bạn muốn kể cho đối phương nghe không?",
+  "Nếu có thể cùng nhau làm một dự án chung (kinh doanh, từ thiện, sáng tạo...), bạn muốn làm gì?",
+  "Bạn muốn khi về già, hai đứa sẽ sống ở đâu và làm gì mỗi ngày?",
+
+  // ── Về đối phương ──
+  "Đặc điểm ngoại hình nào của đối phương khiến bạn mê nhất?",
+  "Tính cách nào của đối phương khiến bạn nể phục và yêu nhất?",
+  "Nụ cười của đối phương có gì đặc biệt với bạn?",
+  "Nếu có thể chọn một siêu năng lực cho đối phương, bạn sẽ chọn gì?",
+  "Thói quen xấu nào của đối phương mà bạn vẫn yêu vì nó là một phần của họ?",
+  "Giọng nói của đối phương có gì khiến bạn thấy dễ chịu?",
+  "Bạn có bí mật nào muốn nói với đối phương nhưng chưa có dịp không?",
+  "Món ăn hay đồ uống nào khiến bạn nhớ đến đối phương ngay lập tức?",
+  "Đối phương giỏi nhất điều gì mà có thể chính họ cũng không nhận ra?",
+  "Nếu dùng một loài hoa để so sánh với đối phương, bạn sẽ chọn hoa gì?",
+
+  // ── Về giao tiếp & thấu hiểu ──
+  "Ngôn ngữ tình yêu của bạn là gì? Và bạn nghĩ của đối phương là gì?",
+  "Có điều gì bạn mong đối phương hiểu về bạn hơn không?",
+  "Khi hai đứa cãi nhau, bạn muốn đối phương làm gì để mọi thứ dịu lại?",
+  "Cách đối phương thể hiện tình yêu có gì khác với cách bạn mong đợi không?",
+  "Bạn có câu 'code word' hay tín hiệu riêng nào giữa hai đứa không?",
+  "Làm sao bạn biết đối phương đang thật sự hạnh phúc?",
+  "Đối phương đã dạy cho bạn điều gì về bản thân mà trước đây bạn chưa từng nhận ra?",
+  "Có lời nói nào của đối phương khiến bạn nhớ mãi không?",
+  "Bạn thích được đối phương an ủi theo cách nào khi bạn buồn?",
+  "Nếu có một điều bạn có thể thay đổi trong cách hai đứa giao tiếp, đó là gì?",
+
+  // ── Vui vẻ & ngẫu hứng ──
+  "Nếu hai đứa là nhân vật hoạt hình, bạn nghĩ mỗi người sẽ là ai?",
+  "Bạn nghĩ đối phương sẽ làm gì nếu bỗng nhiên có thể bay?",
+  "Món ăn kỳ lạ nhất mà bạn muốn thử cùng đối phương là gì?",
+  "Nếu hai đứa cùng tham gia một cuộc thi nhảy, điệu nhảy nào sẽ là 'vũ khí bí mật'?",
+  "Bạn nghĩ ai là người 'hậu đậu' hơn trong hai đứa? Cho ví dụ~",
+  "Nếu đối phương là một món đồ ăn, bạn nghĩ họ sẽ là món gì?",
+  "Thử thách nào bạn muốn đối phương làm trong 24h tới?",
+  "Một bộ phim hoặc show TV nào khiến bạn nghĩ 'giá mà được xem cùng đối phương'?",
+  "Nếu có một ngày 'nói ngược', bạn nghĩ hai đứa sẽ gặp tình huống vui gì?",
+  "Bạn muốn thử cùng đối phương trải nghiệm món ăn nước ngoài nào nhất?",
+
+  // ── Sâu sắc & triết lý ──
+  "Bạn nghĩ bí quyết để giữ một mối quan hệ bền lâu là gì?",
+  "Có câu nói hay trích dẫn nào về tình yêu mà bạn tâm đắc không?",
+  "Theo bạn, yêu và được yêu — điều gì quan trọng hơn?",
+  "Bạn nghĩ gì về câu 'khoảng cách làm tình yêu thêm bền chặt'?",
+  "Nếu cuộc đời là một cuốn sách, bạn muốn chương về hai đứa có tiêu đề gì?",
+  "Điều gì khiến bạn tin rằng hai đứa thuộc về nhau?",
+  "Bạn nghĩ tình yêu thay đổi thế nào theo thời gian? Hai đứa đã trải qua những giai đoạn nào?",
+  "Có một kỷ niệm buồn nào của hai đứa mà sau này lại trở thành bài học quý giá không?",
+  "Bạn nghĩ 'nhà' là một nơi chốn hay là một con người?",
+  "Nếu mai này không còn yêu nhau nữa, bạn muốn được nhớ về điều gì nhất?",
+
+  // ── Mùa & thời gian ──
+  "Bạn thích mùa nào nhất để hẹn hò cùng đối phương? Vì sao?",
+  "Một ngày mưa lý tưởng bên đối phương sẽ như thế nào?",
+  "Giáng sinh này bạn muốn làm gì đặc biệt cho đối phương?",
+  "Mùa hè sắp tới, bạn muốn cùng đối phương đi đâu?",
+  "Tết năm nay bạn muốn cùng đối phương làm gì khác biệt?",
+  "Nếu hai đứa cùng đón bình minh ở một nơi xa, bạn muốn đó là ở đâu?",
+  "Thời điểm nào trong năm khiến bạn yêu đời và yêu đối phương nhất?",
+  "Một buổi tối mùa đông lạnh, bạn muốn làm gì cùng đối phương?",
+  "Ngày sinh nhật lý tưởng mà bạn muốn đối phương tổ chức cho bạn là gì?",
+  "Valentine năm nay bạn muốn nhận được gì từ đối phương?",
+
+  // ── Âm nhạc & nghệ thuật ──
+  "Nếu hai đứa cùng viết một bài hát, nó sẽ có tựa đề là gì?",
+  "Bộ phim nào khiến bạn khóc và muốn ôm đối phương ngay lập tức?",
+  "Nếu được chọn một bài hát làm 'nhạc nền' cho chuyện tình hai đứa, bạn chọn bài gì?",
+  "Thể loại phim nào hai đứa thường xem cùng nhau nhất?",
+  "Có cuốn sách nào bạn muốn giới thiệu cho đối phương đọc không?",
+  "Nếu vẽ một bức tranh về đối phương, bạn sẽ vẽ gì?",
+  "Bài thơ hay câu hát nào khiến bạn nhớ đến đối phương?",
+  "Bạn nghĩ đối phương sẽ thích thể loại nhạc gì nếu họ chưa từng nghe thử?",
+  "Nếu hai đứa cùng tập một bài nhảy TikTok, bạn nghĩ ai sẽ học nhanh hơn?",
+  "Một concert hoặc live show nào bạn muốn cùng đối phương đi xem nhất?",
+];
+
+function pickPoolQuestion(): { question: string; emoji: string } {
+  // Hash the date to pick a deterministic question for both users
   const today = getTodayStr();
-  const { data, error } = await supabase()
+  let hash = 0;
+  for (let i = 0; i < today.length; i++) {
+    hash = ((hash << 5) - hash + today.charCodeAt(i)) | 0;
+  }
+  const idx = Math.abs(hash) % QUESTION_POOL.length;
+  const emojiIdx = Math.abs(hash) % POOL_EMOJIS.length;
+  return { question: QUESTION_POOL[idx], emoji: POOL_EMOJIS[emojiIdx] };
+}
+
+export async function ensureTodayPrompt(): Promise<CouplePrompt | undefined> {
+  const today = getTodayStr();
+
+  // Check existing
+  const { data: existing } = await supabase()
     .from("couple_prompts")
     .select("*, prompt_answers(*)")
     .eq("date", today)
     .limit(1)
     .maybeSingle();
 
-  if (error || !data) return undefined;
-  const prompt = mapPrompt(data);
+  if (existing) return mapPrompt(existing);
+
+  // Create one from the pool
+  const { question, emoji } = pickPoolQuestion();
+  const { data: created, error } = await supabase()
+    .from("couple_prompts")
+    .insert({ question, emoji, date: today })
+    .select("*, prompt_answers(*)")
+    .single();
+
+  if (error) return undefined;
+  return mapPrompt(created);
+}
+
+export async function getTodayPrompt(): Promise<CouplePrompt | undefined> {
+  const prompt = await ensureTodayPrompt();
+  if (!prompt) return undefined;
   return prompt.answers.length < 2 ? prompt : undefined;
+}
+
+export async function getAnsweredPrompts(): Promise<CouplePrompt[]> {
+  const { data, error } = await supabase()
+    .from("couple_prompts")
+    .select("*, prompt_answers(*)")
+    .order("date", { ascending: false });
+
+  if (error) throw error;
+  const mapped = (data ?? []).map(mapPrompt);
+  // Only return prompts that have at least one answer
+  return mapped.filter((p) => p.answers.length > 0);
 }
 
 export async function getAllPrompts(): Promise<CouplePrompt[]> {

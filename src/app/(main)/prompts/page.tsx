@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
-  getAllPrompts,
+  getAnsweredPrompts,
   getTodayPrompt,
   answerPrompt,
   getCurrentUser,
@@ -45,16 +45,16 @@ export default function PromptsPage() {
   const forceUpdate = useForceUpdate();
 
   useEffect(() => {
-    getCurrentUser().then(setCurrentUser);
+    getCurrentUser().then(setCurrentUser).catch(console.error);
   }, []);
 
   useEffect(() => {
-    getAllPrompts().then(setPrompts);
-    getTodayPrompt().then(setTodayPrompt);
+    getAnsweredPrompts().then(setPrompts).catch(console.error);
+    getTodayPrompt().then(setTodayPrompt).catch(console.error);
   }, []);
 
   const refresh = useCallback(async () => {
-    setPrompts(await getAllPrompts());
+    setPrompts(await getAnsweredPrompts());
     setTodayPrompt(await getTodayPrompt());
     forceUpdate();
   }, [forceUpdate]);
@@ -160,7 +160,7 @@ export default function PromptsPage() {
       <div className="flex flex-col gap-3">
         {prompts.map((prompt, idx) => {
           const isExpanded = expandedId === prompt.id;
-          const isToday = prompt === todayPrompt;
+          const isToday = todayPrompt ? prompt.id === todayPrompt.id : false;
           return (
             <motion.div
               key={prompt.id}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { getCurrentUser, getTodayPrompt, getJournalEntries, getPlans, type JournalEntry, type Plan, type CouplePrompt } from "@/lib/data";
+import { getCurrentUser, getTodayPrompt, getJournalEntries, getUpcomingPlans, type JournalEntry, type Plan, type CouplePrompt } from "@/lib/data";
 
 const RELATIONSHIP_START = new Date("2024-02-14");
 
@@ -59,14 +59,42 @@ export default function HomePage() {
   const [todayPrompt, setTodayPrompt] = useState<CouplePrompt | undefined>(undefined);
   const [recentEntries, setRecentEntries] = useState<JournalEntry[]>([]);
   const [upcomingPlans, setUpcomingPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const mountedRef = useRef(true);
   const daysTogether = getDaysTogether();
   const daysUntil = getDaysUntilAnniversary();
 
   useEffect(() => {
-    getCurrentUser().then(setCurrentUser);
-    getTodayPrompt().then(setTodayPrompt);
-    getJournalEntries().then((entries) => setRecentEntries(entries.slice(0, 5)));
-    getPlans().then((plans) => setUpcomingPlans(plans.filter((p) => p.status === "planned").slice(0, 3)));
+    mountedRef.current = true;
+    let pending = 4;
+
+    const done = () => {
+      pending--;
+      if (pending === 0 && mountedRef.current) setLoading(false);
+    };
+
+    getCurrentUser()
+      .then((u) => { if (mountedRef.current) setCurrentUser(u); })
+      .catch(console.error)
+      .finally(done);
+
+    getTodayPrompt()
+      .then((p) => { if (mountedRef.current) setTodayPrompt(p); })
+      .catch(console.error)
+      .finally(done);
+
+    getJournalEntries()
+      .then((entries) => { if (mountedRef.current) setRecentEntries(entries.slice(0, 5)); })
+      .catch(console.error)
+      .finally(done);
+
+    // Plans filtered at DB level — no client-side filter needed
+    getUpcomingPlans(3)
+      .then((plans) => { if (mountedRef.current) setUpcomingPlans(plans); })
+      .catch(console.error)
+      .finally(done);
+
+    return () => { mountedRef.current = false; };
   }, []);
 
   return (
@@ -135,7 +163,15 @@ export default function HomePage() {
           )}
         </div>
 
-        {recentEntries.length === 0 ? (
+        {loading ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex justify-center py-8"
+          >
+            <span className="text-sm text-muted-foreground animate-pulse">Đang tải...</span>
+          </motion.div>
+        ) : recentEntries.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -230,7 +266,15 @@ export default function HomePage() {
           )}
         </div>
 
-        {upcomingPlans.length === 0 ? (
+        {loading ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex justify-center py-8"
+          >
+            <span className="text-sm text-muted-foreground animate-pulse">Đang tải...</span>
+          </motion.div>
+        ) : upcomingPlans.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -243,24 +287,26 @@ export default function HomePage() {
             </Button>
           </motion.div>
         ) : (
-          <motion.div
-            variants={fadeStagger.container}
-            initial="hidden"
-            animate="show"
-            className="flex flex-col gap-2"
-          >
-            {upcomingPlans.map((plan) => (
-              <motion.div key={plan.id} variants={fadeStagger.item}>
-                <Link href={`/plans`}>
-                  <Card
-                    size="sm"
-                    className="flex-row items-center gap-3 px-4 py-3 shadow-[0_4px_16px_oklch(0.25_0.02_45/0.06)] hover:shadow-[0_6px_20px_oklch(0.25_0.02_45/0.10)] transition-shadow"
-                  >
+          <div className="flex flex-col gap-2">
+            {upcomingPlans.map((plan, idx) => (
+              <motion.div
+                key={plan.id}
+                initial={{ opacity: 0, y: 16, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{
+                  delay: idx * 0.1,
+                  type: "spring",
+                  stiffness: 280,
+                  damping: 24,
+                }}
+              >
+                <Link href="/plans">
+                  <div className="flex items-center gap-3 rounded-xl bg-card px-4 py-3 text-sm ring-1 ring-foreground/10 shadow-[0_4px_16px_oklch(0.25_0.02_45/0.06)] hover:shadow-[0_6px_20px_oklch(0.25_0.02_45/0.10)] transition-shadow">
                     <span className="text-2xl" aria-hidden>
-                      {plan.location ?? "📍"}
+                      📍
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{plan.title}</p>
+                      <p className="text-sm font-medium truncate text-foreground">{plan.title}</p>
                       <p className="text-xs text-muted-foreground">
                         {formatDate(plan.date)}
                       </p>
@@ -271,11 +317,11 @@ export default function HomePage() {
                     >
                       📅 Sắp tới
                     </Badge>
-                  </Card>
+                  </div>
                 </Link>
               </motion.div>
             ))}
-          </motion.div>
+          </div>
         )}
       </section>
 

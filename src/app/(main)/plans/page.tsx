@@ -43,7 +43,7 @@ export default function PlansPage() {
   const [convertDialogPlan, setConvertDialogPlan] = useState<Plan | null>(null);
 
   useEffect(() => {
-    getPlans().then(setPlans);
+    getPlans().then(setPlans).catch(console.error);
   }, []);
 
   const filtered = plans.filter((p) => {
