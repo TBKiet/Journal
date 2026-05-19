@@ -153,7 +153,7 @@ CREATE INDEX IF NOT EXISTS idx_comments_date ON comments(created_at);
 CREATE INDEX IF NOT EXISTS idx_plans_date ON plans(date);
 CREATE INDEX IF NOT EXISTS idx_plans_status ON plans(status);
 CREATE INDEX IF NOT EXISTS idx_wishlist_places_category ON wishlist_places(category);
-CREATE INDEX IF NOT EXISTS idx_wishlist_places_status ON wishlist_places(status);
+  CREATE INDEX IF NOT EXISTS idx_wishlist_places_status ON wishlist_places(status);
 CREATE INDEX IF NOT EXISTS idx_wishlist_places_created_at ON wishlist_places(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_prompts_date ON couple_prompts(date);
 CREATE INDEX IF NOT EXISTS idx_prompt_answers_prompt ON prompt_answers(prompt_id);

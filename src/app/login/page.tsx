@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { signIn } from "@/lib/auth";
 import { setCurrentUser } from "@/lib/data";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Card,
   CardContent,
@@ -78,7 +79,7 @@ export default function LoginPage() {
             </p>
             <div className="flex gap-4 justify-center">
               <ProfileButton
-                emoji="🧑‍💻"
+                imageSrc="/bk-avatar.png"
                 label="BK"
                 accentColor={ANH_ACCENT}
                 bgColor={ANH_BG}
@@ -86,7 +87,7 @@ export default function LoginPage() {
                 onClick={() => handleProfileSelect("BK")}
               />
               <ProfileButton
-                emoji="🌸"
+                imageSrc="/bi-avatar.png"
                 label="Bi"
                 accentColor={EM_ACCENT}
                 bgColor={EM_BG}
@@ -119,14 +120,14 @@ export default function LoginPage() {
 }
 
 function ProfileButton({
-  emoji,
+  imageSrc,
   label,
   accentColor,
   bgColor,
   loading,
   onClick,
 }: {
-  emoji: string;
+  imageSrc: string;
   label: string;
   accentColor: string;
   bgColor: string;
@@ -156,9 +157,10 @@ function ProfileButton({
         e.currentTarget.style.boxShadow = `0 4px 24px -4px ${accentColor} / 0.18`;
       }}
     >
-      <span className="text-5xl" role="img" aria-label={label}>
-        {emoji}
-      </span>
+      <Avatar size="lg" className="size-20 ring-4 ring-white/65 shadow-md">
+        <AvatarImage src={imageSrc} alt={label} />
+        <AvatarFallback>{label}</AvatarFallback>
+      </Avatar>
       <span
         className="text-lg font-bold"
         style={{ color: accentColor }}

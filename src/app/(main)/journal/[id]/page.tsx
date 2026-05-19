@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Trash2, Pencil, X, Pin, PinOff, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { PersonAvatar } from "@/components/common/person-avatar";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import {
@@ -346,11 +346,12 @@ export default function EntryDetailPage() {
                   key={c.id}
                   className="flex items-start gap-2 rounded-xl bg-card ring-1 ring-foreground/10 px-3 py-2.5"
                 >
-                  <Avatar size="sm" className="shrink-0 mt-0.5">
-                    <AvatarFallback className="text-[0.6rem] bg-secondary/80 text-secondary-foreground font-bold">
-                      {c.by === "BK" ? "BK" : "Bi"}
-                    </AvatarFallback>
-                  </Avatar>
+                  <PersonAvatar
+                    person={c.by}
+                    size="sm"
+                    className="shrink-0 mt-0.5"
+                    fallbackClassName="text-[0.6rem] bg-secondary/80 text-secondary-foreground font-bold"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className="text-xs font-bold text-foreground">

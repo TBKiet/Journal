@@ -6,7 +6,7 @@ import { Send, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { PersonAvatar } from "@/components/common/person-avatar";
 import { cn } from "@/lib/utils";
 import {
   getAnsweredPrompts,
@@ -104,11 +104,12 @@ export default function PromptsPage() {
 
           {todayPrompt.answers.map((a) => (
             <div key={a.by} className="flex items-start gap-2 mb-2 p-3 rounded-xl bg-white/60 dark:bg-black/20">
-              <Avatar size="sm" className="shrink-0 mt-0.5">
-                <AvatarFallback className="text-[0.6rem] bg-secondary/80 font-bold">
-                  {a.by === "BK" ? "BK" : "Bi"}
-                </AvatarFallback>
-              </Avatar>
+              <PersonAvatar
+                person={a.by}
+                size="sm"
+                className="shrink-0 mt-0.5"
+                fallbackClassName="text-[0.6rem] bg-secondary/80 font-bold"
+              />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="text-xs font-bold">{a.by}</span>
@@ -121,11 +122,12 @@ export default function PromptsPage() {
 
           {!hasAnswered(todayPrompt, currentUser) && (
             <div className="flex items-start gap-2 mt-3">
-              <Avatar size="sm" className="shrink-0 mt-1.5">
-                <AvatarFallback className="text-[0.6rem] bg-primary/20 font-bold">
-                  {currentUser === "BK" ? "BK" : "Bi"}
-                </AvatarFallback>
-              </Avatar>
+              <PersonAvatar
+                person={currentUser}
+                size="sm"
+                className="shrink-0 mt-1.5"
+                fallbackClassName="text-[0.6rem] bg-primary/20 font-bold"
+              />
               <div className="flex-1 flex items-center gap-2">
                 <Textarea
                   placeholder={`${currentUser} trả lời nè...`}
@@ -221,11 +223,12 @@ export default function PromptsPage() {
                         )}
                         {prompt.answers.map((a) => (
                           <div key={a.by} className="flex items-start gap-2 p-2.5 rounded-xl bg-muted/50">
-                            <Avatar size="sm" className="shrink-0 mt-0.5">
-                              <AvatarFallback className="text-[0.6rem] bg-secondary/80 font-bold">
-                                {a.by === "BK" ? "BK" : "Bi"}
-                              </AvatarFallback>
-                            </Avatar>
+                            <PersonAvatar
+                              person={a.by}
+                              size="sm"
+                              className="shrink-0 mt-0.5"
+                              fallbackClassName="text-[0.6rem] bg-secondary/80 font-bold"
+                            />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-0.5">
                                 <span className="text-xs font-bold">{a.by}</span>
@@ -238,11 +241,12 @@ export default function PromptsPage() {
 
                         {!hasAnswered(prompt, currentUser) && (
                           <div className="flex items-start gap-2 mt-1">
-                            <Avatar size="sm" className="shrink-0 mt-1.5">
-                              <AvatarFallback className="text-[0.6rem] bg-primary/20 font-bold">
-                                {currentUser === "BK" ? "BK" : "Bi"}
-                              </AvatarFallback>
-                            </Avatar>
+                            <PersonAvatar
+                              person={currentUser}
+                              size="sm"
+                              className="shrink-0 mt-1.5"
+                              fallbackClassName="text-[0.6rem] bg-primary/20 font-bold"
+                            />
                             <div className="flex-1 flex items-center gap-2">
                               <Textarea
                                 placeholder={`${currentUser} trả lời nè...`}

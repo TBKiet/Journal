@@ -6,8 +6,8 @@ import { motion } from "framer-motion"
 import { Sun, Moon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTheme } from "@/components/theme-provider"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { navigationTabs } from "./nav-config"
+import { PersonAvatar } from "@/components/common/person-avatar"
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -50,9 +50,10 @@ export function Sidebar() {
         <div className="mt-auto border-t border-sidebar-border/80 pt-4">
           <div className="rounded-2xl border border-sidebar-border/70 bg-background/55 px-3 py-3">
             <div className="flex items-center gap-3">
-              <Avatar size="sm">
-                <AvatarFallback className="bg-primary/10 text-primary">💑</AvatarFallback>
-              </Avatar>
+              <div className="flex -space-x-2">
+                <PersonAvatar person="BK" size="sm" className="ring-2 ring-background" />
+                <PersonAvatar person="Bi" size="sm" className="ring-2 ring-background" />
+              </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-sidebar-foreground truncate">Us</p>
               </div>

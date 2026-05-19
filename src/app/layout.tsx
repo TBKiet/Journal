@@ -28,6 +28,16 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "Our Journal 💕",
   description: "A private diary for two",
+  icons: {
+    icon: [
+      { url: "/itunes.png", type: "image/png", sizes: "512x512" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    apple: [
+      { url: "/itunes.png", type: "image/png", sizes: "512x512" },
+    ],
+    shortcut: ["/itunes.png"],
+  },
   appleWebApp: {
     capable: true,
     title: "Our Journal",

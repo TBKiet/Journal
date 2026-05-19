@@ -7,7 +7,7 @@ import { Trash2, Pencil, ChevronDown, ChevronUp, Pin, PinOff } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { PersonAvatar } from "@/components/common/person-avatar";
 import { cn } from "@/lib/utils";
 import {
   getJournalEntries,
@@ -558,11 +558,11 @@ function EntryCard({
           <div className="flex flex-col gap-2 border-t border-border/50 pt-3">
             {entry.comments.slice(-3).map((c) => (
               <div key={c.id} className="flex items-start gap-2">
-                <Avatar size="sm">
-                  <AvatarFallback className="text-[0.55rem] bg-secondary/70 text-secondary-foreground">
-                    {c.by === "BK" ? "BK" : "Bi"}
-                  </AvatarFallback>
-                </Avatar>
+                <PersonAvatar
+                  person={c.by}
+                  size="sm"
+                  fallbackClassName="text-[0.55rem] bg-secondary/70 text-secondary-foreground"
+                />
                 <div className="flex-1 min-w-0">
                   <span className="text-[0.65rem] font-semibold text-foreground/80">
                     {c.by}
