@@ -85,7 +85,10 @@ export default function HomePage() {
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="grid gap-4 lg:grid-cols-[1.4fr_0.9fr]"
+        className={cn(
+          "grid gap-4",
+          todayPrompt ? "lg:grid-cols-[1.4fr_0.9fr]" : "lg:grid-cols-1"
+        )}
       >
         <div className="paper-panel relative overflow-hidden p-6 sm:p-7">
           <div className="absolute inset-y-0 right-0 w-40 bg-gradient-to-l from-primary/10 to-transparent" />
@@ -95,7 +98,7 @@ export default function HomePage() {
               Xin chào {currentUser}.
             </h1>
           </div>
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <div className="rounded-[1.25rem] border border-border/70 bg-background/75 p-4">
               <p className="section-kicker">Bên nhau</p>
               <p className="mt-2 font-heading text-3xl text-foreground">{daysTogether}</p>
@@ -105,10 +108,6 @@ export default function HomePage() {
               <p className="section-kicker">Kỷ niệm tới</p>
               <p className="mt-2 font-heading text-3xl text-foreground">{daysUntil}</p>
               <p className="text-sm text-muted-foreground">ngày còn lại</p>
-            </div>
-            <div className="rounded-[1.25rem] border border-border/70 bg-secondary/55 p-4">
-              <p className="section-kicker">Nhịp hôm nay</p>
-              <p className="mt-2 text-lg font-semibold text-secondary-foreground">Chậm, ấm và gần nhau</p>
             </div>
           </div>
         </div>
@@ -135,10 +134,35 @@ export default function HomePage() {
             </Card>
           </Link>
         )}
+
+        {!todayPrompt && (
+          <Card
+            size="sm"
+            className="overflow-hidden bg-[linear-gradient(145deg,color-mix(in_oklab,var(--secondary)_40%,white_60%),color-mix(in_oklab,var(--card)_78%,transparent))]"
+          >
+            <CardHeader className="pb-2">
+              <Badge className="w-fit bg-background/80 text-foreground shadow-none">Hôm nay</Badge>
+              <CardTitle className="mt-3 text-2xl leading-tight sm:text-[1.85rem]">
+                Prompt hôm nay đã xong.
+              </CardTitle>
+              <CardDescription className="mt-2 text-sm leading-6">
+                Cả hai đã trả lời rồi, giờ chỉ còn việc viết thêm một entry mới hoặc thêm nơi muốn đi tiếp theo.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="mt-auto flex flex-wrap items-center gap-3 pt-4">
+              <Button size="sm" render={<Link href="/journal/new" />}>
+                ✍️ Viết nhật ký
+              </Button>
+              <Button variant="outline" size="sm" render={<Link href="/wishlist/new" />}>
+                🗺️ Thêm wish
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </motion.section>
 
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <section className="flex flex-col gap-3">
+      <div className="grid gap-6 xl:grid-cols-[1.18fr_0.82fr]">
+        <section className="paper-panel flex h-full flex-col gap-4 p-4 sm:p-5">
           {pinnedEntries.length > 0 && (
             <div className="flex flex-col gap-3">
               <div>
@@ -197,14 +221,14 @@ export default function HomePage() {
           </div>
 
           {loading ? (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="paper-panel flex justify-center py-10">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-center py-10">
               <span className="text-sm text-muted-foreground animate-pulse">Đang tải...</span>
             </motion.div>
           ) : latestEntries.length === 0 && pinnedEntries.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="paper-panel flex flex-col items-center gap-4 px-6 py-12 text-center"
+              className="flex flex-col items-center gap-4 px-6 py-12 text-center"
             >
               <span className="text-5xl">📝</span>
               <p className="max-w-sm text-sm leading-6 text-muted-foreground">
@@ -253,11 +277,29 @@ export default function HomePage() {
                   </Link>
                 </motion.div>
               ))}
+              {latestEntries.length === 1 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 18, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ delay: 0.12, type: "spring", stiffness: 260, damping: 24 }}
+                >
+                  <Card className="flex h-full min-h-[210px] flex-col justify-between border-dashed bg-background/50">
+                    <CardHeader>
+                      <p className="section-kicker">Keep writing</p>
+                      <CardTitle className="max-w-[14rem]">Thêm một entry nữa để bảng nhớ phong phú hơn.</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex items-end justify-between gap-3">
+                      <p className="text-sm leading-6 text-muted-foreground">Ghi lại thêm một bữa ăn, một cuộc hẹn hoặc một điều nhỏ vừa xảy ra.</p>
+                      <Button size="sm" render={<Link href="/journal/new" />}>Viết tiếp</Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
             </div>
           )}
         </section>
 
-        <section className="flex flex-col gap-3">
+        <section className="paper-panel flex h-full flex-col gap-3 p-4 sm:p-5">
           <div className="flex items-end justify-between">
             <div>
               <p className="section-kicker">Wish list</p>
@@ -270,13 +312,13 @@ export default function HomePage() {
             )}
           </div>
 
-          <div className="paper-panel flex flex-col gap-3 p-3">
+          <div className="flex flex-col gap-3">
             {loading ? (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-center py-8">
                 <span className="text-sm text-muted-foreground animate-pulse">Đang tải...</span>
               </motion.div>
             ) : wishlistPlaces.length === 0 ? (
-              <div className="flex flex-col items-center gap-4 px-4 py-10 text-center">
+              <div className="flex min-h-[245px] flex-col items-center justify-center gap-4 px-4 py-10 text-center">
                 <span className="text-5xl">🗺️</span>
                 <p className="max-w-xs text-sm leading-6 text-muted-foreground">Chưa có địa điểm nào trong wish list.</p>
                 <Button variant="outline" render={<Link href="/wishlist/new" />}>➕ Thêm địa điểm</Button>
