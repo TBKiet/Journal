@@ -7,64 +7,64 @@ import { Sun, Moon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTheme } from "@/components/theme-provider"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-
-const tabs = [
-  { emoji: "🏠", label: "Home", href: "/home" },
-  { emoji: "📖", label: "Journal", href: "/journal" },
-  { emoji: "📸", label: "Photos", href: "/photos" },
-  { emoji: "📋", label: "Plans", href: "/plans" },
-  { emoji: "💬", label: "Prompts", href: "/prompts" },
-  { emoji: "💕", label: "Dates", href: "/dates" },
-]
+import { navigationTabs } from "./nav-config"
 
 export function Sidebar() {
   const pathname = usePathname()
   const { theme, toggle } = useTheme()
 
   return (
-    <aside className="fixed left-0 top-0 bottom-0 z-40 hidden md:flex flex-col w-64 bg-sidebar border-r border-sidebar-border">
-      <div className="flex flex-col flex-1 p-4">
-        <div className="mb-8 px-2 py-4">
-          <Link href="/home" className="text-xl font-extrabold text-sidebar-foreground tracking-tight">
-            OurJournal
+    <aside className="fixed left-0 top-0 bottom-0 z-40 hidden w-72 p-4 md:flex">
+      <div className="flex flex-1 flex-col rounded-[28px] border border-sidebar-border/80 bg-sidebar/88 p-5 shadow-[0_24px_60px_-32px_rgba(77,53,40,0.35)] backdrop-blur-xl">
+        <div className="mb-8 border-b border-sidebar-border/80 px-2 pb-5 pt-3">
+          <p className="section-kicker">Shared memory</p>
+          <Link href="/home" className="mt-2 block font-heading text-[2rem] leading-none text-sidebar-foreground tracking-[-0.03em]">
+            Our Journal
           </Link>
+          <p className="mt-2 text-sm text-muted-foreground">Một nơi mềm mại để giữ lại những ngày bình thường.</p>
         </div>
 
-        <nav className="flex flex-col gap-1 flex-1">
-          {tabs.map((tab) => {
+        <nav className="flex flex-1 flex-col gap-1.5">
+          {navigationTabs.map((tab) => {
             const isActive = pathname.startsWith(tab.href)
             return (
               <Link key={tab.href} href={tab.href}>
                 <motion.div
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ x: 3 }}
+                  whileTap={{ scale: 0.98 }}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors select-none",
+                    "flex items-center gap-3 rounded-2xl border px-3.5 py-3 text-sm font-semibold transition-all select-none",
                     isActive
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                      ? "border-sidebar-primary/20 bg-sidebar-primary text-sidebar-primary-foreground shadow-[0_14px_28px_-18px_rgba(154,93,62,0.85)]"
+                      : "border-transparent text-sidebar-foreground/80 hover:border-sidebar-border hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
                   )}
                 >
-                  <span className="text-lg leading-none">{tab.emoji}</span>
-                  <span>{tab.label}</span>
+                  <span className={cn("text-lg leading-none transition-transform", isActive && "scale-110")}>{tab.emoji}</span>
+                  <span className="flex-1">{tab.label}</span>
+                  {isActive && <span className="h-2 w-2 rounded-full bg-sidebar-primary-foreground/80" />}
                 </motion.div>
               </Link>
             )
           })}
         </nav>
 
-        <div className="border-t border-sidebar-border pt-4 mt-auto">
-          <div className="flex items-center gap-3 px-3 py-2">
-            <Avatar size="sm">
-              <AvatarFallback>💑</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-sidebar-foreground truncate">Us</p>
+        <div className="mt-auto border-t border-sidebar-border/80 pt-4">
+          <div className="rounded-2xl border border-sidebar-border/70 bg-background/55 px-3 py-3">
+            <div className="flex items-center gap-3">
+              <Avatar size="sm">
+                <AvatarFallback className="bg-primary/10 text-primary">💑</AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-sidebar-foreground truncate">Us</p>
+                <p className="text-xs text-muted-foreground">365 trang nhỏ, 1 câu chuyện lớn</p>
+              </div>
             </div>
             <button
               onClick={toggle}
-              className="p-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+              className="mt-3 flex w-full items-center justify-between rounded-xl border border-sidebar-border/70 px-3 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent/60"
               aria-label="Toggle dark mode"
             >
+              <span>{theme === "dark" ? "Chuyển sang sáng" : "Chuyển sang tối"}</span>
               {theme === "dark" ? (
                 <Sun className="size-4" />
               ) : (

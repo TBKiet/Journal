@@ -1,11 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito, Geist_Mono } from "next/font/google";
+import { Fraunces, Geist_Mono, Manrope } from "next/font/google";
 import "./globals.css";
 
-const nunito = Nunito({
-  variable: "--font-nunito",
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin", "vietnamese"],
   weight: ["400", "500", "600", "700", "800"],
+});
+
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin", "vietnamese"],
+  weight: ["500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -36,7 +42,7 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
-      className={`${nunito.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${manrope.variable} ${fraunces.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>{children}</body>

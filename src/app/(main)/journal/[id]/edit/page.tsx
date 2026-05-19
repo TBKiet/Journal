@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -16,6 +16,12 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import {
+  clearDraft,
+  formatDraftTime,
+  readDraft,
+  useDraftAutosave,
+} from "@/lib/draft-autosave";
+import {
   getJournalEntry,
   updateJournalEntry,
 } from "@/lib/data";
@@ -29,6 +35,13 @@ const FULL_MOODS = [
   "😋", "🤤", "😷", "🥳", "😶‍🌫️",
   "🫡", "💀", "👻", "🎉", "💕",
 ];
+
+type JournalDraft = {
+  title: string;
+  date: string;
+  mood: string;
+  body: string;
+};
 
 export default function EditEntryPage() {
   const params = useParams();
@@ -44,6 +57,10 @@ export default function EditEntryPage() {
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [draftHydrated, setDraftHydrated] = useState(false);
+  const [restoredAt, setRestoredAt] = useState<string | null>(null);
+  const initialEntryRef = useRef<JournalDraft | null>(null);
+  const draftKey = `ourjournal:draft:journal:edit:${params.id as string}`;
 
   useEffect(() => {
     getJournalEntry(params.id as string).then((entry) => {
@@ -52,14 +69,34 @@ export default function EditEntryPage() {
         setLoading(false);
         return;
       }
-      setTitle(entry.title);
-      setDate(entry.date);
-      setMood(entry.mood);
-      setBody(entry.body);
+      const initialEntry = {
+        title: entry.title,
+        date: entry.date,
+        mood: entry.mood,
+        body: entry.body,
+      } satisfies JournalDraft;
+
+      initialEntryRef.current = initialEntry;
+
+      const storedDraft = readDraft<JournalDraft>(draftKey);
+      if (storedDraft) {
+        setTitle(storedDraft.data.title);
+        setDate(storedDraft.data.date);
+        setMood(storedDraft.data.mood);
+        setBody(storedDraft.data.body);
+        setRestoredAt(storedDraft.updatedAt);
+      } else {
+        setTitle(initialEntry.title);
+        setDate(initialEntry.date);
+        setMood(initialEntry.mood);
+        setBody(initialEntry.body);
+      }
+
       setPhotos(entry.photos);
+      setDraftHydrated(true);
       setLoading(false);
     });
-  }, [params.id]);
+  }, [params.id, draftKey]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -128,8 +165,35 @@ export default function EditEntryPage() {
       body: body.trim(),
       photos,
     });
+    clearSavedDraft();
     setSubmitting(false);
     router.push(`/journal/${params.id}`);
+  };
+
+  const draftValue = useMemo<JournalDraft>(() => ({
+    title,
+    date,
+    mood,
+    body,
+  }), [title, date, mood, body]);
+
+  const { savedAt, clearSavedDraft } = useDraftAutosave({
+    storageKey: draftKey,
+    value: draftValue,
+    enabled: draftHydrated && !submitting && !loading && !notFound,
+  });
+
+  const handleDiscardDraft = () => {
+    clearDraft(draftKey);
+    clearSavedDraft();
+    setRestoredAt(null);
+
+    if (!initialEntryRef.current) return;
+
+    setTitle(initialEntryRef.current.title);
+    setDate(initialEntryRef.current.date);
+    setMood(initialEntryRef.current.mood);
+    setBody(initialEntryRef.current.body);
   };
 
   if (loading) {
@@ -168,6 +232,31 @@ export default function EditEntryPage() {
           </h1>
         </div>
       </motion.div>
+
+      <div className="paper-panel mb-4 flex items-center justify-between gap-3 px-4 py-3">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Draft autosave
+          </p>
+          <p className="mt-1 text-sm text-foreground">
+            {!draftHydrated
+              ? "Đang chuẩn bị nháp..."
+              : savedAt
+                ? `Đã lưu nháp lúc ${formatDraftTime(savedAt)}`
+                : restoredAt
+                  ? `Đã khôi phục nháp lúc ${formatDraftTime(restoredAt)}`
+                  : "Nháp chỉnh sửa sẽ tự động lưu trên thiết bị này"}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Lưu phần văn bản của bài viết. Ảnh hiện tại không được lưu vào nháp chỉnh sửa.
+          </p>
+        </div>
+        {(savedAt || restoredAt) && (
+          <Button variant="ghost" size="sm" onClick={handleDiscardDraft}>
+            Xóa nháp
+          </Button>
+        )}
+      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}

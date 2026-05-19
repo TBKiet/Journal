@@ -47,23 +47,21 @@ export default function LoginPage() {
   }, [router]);
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[oklch(0.98_0.006_355)] via-[oklch(0.95_0.04_350)] to-[oklch(0.92_0.06_345)] p-4">
-      {/* Decorative soft blobs */}
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[linear-gradient(180deg,oklch(0.985_0.008_70),oklch(0.955_0.018_58))] p-4">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-[oklch(0.62_0.13_5_/_0.08)] blur-3xl" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-[oklch(0.56_0.16_355_/_0.07)] blur-3xl" />
+        <div className="absolute -top-24 right-[-4rem] h-96 w-96 rounded-full bg-[oklch(0.72_0.08_24_/_0.14)] blur-3xl" />
+        <div className="absolute -bottom-24 left-[-5rem] h-96 w-96 rounded-full bg-[oklch(0.84_0.05_145_/_0.18)] blur-3xl" />
+        <div className="texture-dots absolute inset-0 opacity-40" />
       </div>
 
-      <Card className="relative w-full max-w-sm border-0 bg-[oklch(1_0.005_70_/_0.85)] backdrop-blur-sm shadow-[0_8px_40px_-12px_oklch(0.4_0.05_30_/_0.12)] rounded-3xl">
-        <CardHeader className="items-center text-center pb-2 pt-8">
-          <CardTitle className="text-3xl font-bold tracking-tight">
-            Our Journal{" "}
-            <span role="img" aria-label="love">
-              💕
-            </span>
+      <Card className="relative w-full max-w-md rounded-[2rem] bg-[oklch(1_0.004_70_/_0.82)] backdrop-blur-md">
+        <CardHeader className="items-center pb-2 pt-8 text-center">
+          <p className="section-kicker">Shared diary</p>
+          <CardTitle className="mt-2 text-4xl tracking-[-0.04em]">
+            Our Journal <span role="img" aria-label="love">💕</span>
           </CardTitle>
-          <CardDescription className="text-base">
-            Nhật ký cá nhân
+          <CardDescription className="max-w-xs text-sm leading-6">
+            Chọn người đang mở nhật ký để tiếp tục vào không gian riêng của hai bạn.
           </CardDescription>
         </CardHeader>
 
@@ -75,7 +73,7 @@ export default function LoginPage() {
             transition={{ duration: 0.35, ease: "easeOut" }}
             className="flex flex-col gap-4"
           >
-            <p className="text-center text-muted-foreground text-sm">
+            <p className="text-center text-sm text-muted-foreground">
               Bạn là ai?
             </p>
             <div className="flex gap-4 justify-center">
@@ -113,7 +111,7 @@ export default function LoginPage() {
         </CardContent>
       </Card>
 
-      <p className="mt-8 text-xs text-muted-foreground/60">
+      <p className="mt-8 text-xs tracking-[0.18em] text-muted-foreground/70 uppercase">
         nhật ký của anh và em
       </p>
     </div>
@@ -142,7 +140,7 @@ function ProfileButton({
       onClick={onClick}
       disabled={loading}
       className={cn(
-        "flex flex-col items-center gap-3 p-6 rounded-2xl w-36 cursor-pointer select-none transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "flex w-36 cursor-pointer select-none flex-col items-center gap-3 rounded-[1.6rem] border border-white/55 p-6 transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         loading && "opacity-70 cursor-wait"
       )}
       style={{

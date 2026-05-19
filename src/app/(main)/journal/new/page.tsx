@@ -16,6 +16,12 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import {
+  clearDraft,
+  formatDraftTime,
+  readDraft,
+  useDraftAutosave,
+} from "@/lib/draft-autosave";
+import {
   addJournalEntry,
   getCurrentUser,
 } from "@/lib/data";
@@ -30,6 +36,15 @@ const FULL_MOODS = [
   "😋", "🤤", "😷", "🥳", "😶‍🌫️",
   "🫡", "💀", "👻", "🎉", "💕",
 ];
+
+const NEW_ENTRY_DRAFT_KEY = "ourjournal:draft:journal:new";
+
+type JournalDraft = {
+  title: string;
+  date: string;
+  mood: string;
+  body: string;
+};
 
 function todayStr() {
   const d = new Date();
@@ -74,20 +89,63 @@ function NewEntryForm() {
     return null;
   }, [searchParams]);
 
-  const [title, setTitle] = useState(prefill?.title ?? "");
-  const [date, setDate] = useState(todayStr());
-  const [mood, setMood] = useState(prefill ? "🥰" : "");
-  const [body, setBody] = useState(
-    prefill
+  const baseDraft = useMemo<JournalDraft>(() => ({
+    title: prefill?.title ?? "",
+    date: todayStr(),
+    mood: prefill ? "🥰" : "",
+    body: prefill
       ? `${prefill.text}${prefill.location ? `\n\n📍 ${prefill.location}` : ""}`
-      : ""
-  );
+      : "",
+  }), [prefill]);
+
+  const [title, setTitle] = useState(baseDraft.title);
+  const [date, setDate] = useState(baseDraft.date);
+  const [mood, setMood] = useState(baseDraft.mood);
+  const [body, setBody] = useState(baseDraft.body);
   const [photos, setPhotos] = useState<string[]>([]);
   const [moodPickerOpen, setMoodPickerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [draftHydrated, setDraftHydrated] = useState(false);
+  const [restoredAt, setRestoredAt] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingFilesRef = useRef<File[]>([]);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const storedDraft = readDraft<JournalDraft>(NEW_ENTRY_DRAFT_KEY);
+
+      if (storedDraft) {
+        setTitle(storedDraft.data.title);
+        setDate(storedDraft.data.date);
+        setMood(storedDraft.data.mood);
+        setBody(storedDraft.data.body);
+        setRestoredAt(storedDraft.updatedAt);
+      } else {
+        setTitle(baseDraft.title);
+        setDate(baseDraft.date);
+        setMood(baseDraft.mood);
+        setBody(baseDraft.body);
+      }
+
+      setDraftHydrated(true);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [baseDraft]);
+
+  const draftValue = useMemo<JournalDraft>(() => ({
+    title,
+    date,
+    mood,
+    body,
+  }), [title, date, mood, body]);
+
+  const { savedAt, clearSavedDraft } = useDraftAutosave({
+    storageKey: NEW_ENTRY_DRAFT_KEY,
+    value: draftValue,
+    enabled: draftHydrated && !submitting,
+  });
 
   const processFile = useCallback((file: File) => {
     if (!file.type.startsWith("image/")) return;
@@ -168,12 +226,24 @@ function NewEntryForm() {
         body: body.trim(),
         photos: allPhotoUrls,
         author: currentUser,
+        isPinned: false,
       });
+      clearSavedDraft();
       router.push("/journal");
     } catch {
       setError("Có lỗi khi lưu. Thử lại nha~");
       setSubmitting(false);
     }
+  };
+
+  const handleDiscardDraft = () => {
+    clearDraft(NEW_ENTRY_DRAFT_KEY);
+    clearSavedDraft();
+    setRestoredAt(null);
+    setTitle(baseDraft.title);
+    setDate(baseDraft.date);
+    setMood(baseDraft.mood);
+    setBody(baseDraft.body);
   };
 
   return (
@@ -196,6 +266,31 @@ function NewEntryForm() {
           </p>
         </div>
       </motion.div>
+
+      <div className="paper-panel mb-4 flex items-center justify-between gap-3 px-4 py-3">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Draft autosave
+          </p>
+          <p className="mt-1 text-sm text-foreground">
+            {!draftHydrated
+              ? "Đang chuẩn bị nháp..."
+              : savedAt
+                ? `Đã lưu nháp lúc ${formatDraftTime(savedAt)}`
+                : restoredAt
+                  ? `Đã khôi phục nháp lúc ${formatDraftTime(restoredAt)}`
+                  : "Nháp sẽ tự động lưu trên thiết bị này"}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Lưu tiêu đề, ngày, mood và nội dung. Ảnh không được lưu vào nháp.
+          </p>
+        </div>
+        {(savedAt || restoredAt) && (
+          <Button variant="ghost" size="sm" onClick={handleDiscardDraft}>
+            Xóa nháp
+          </Button>
+        )}
+      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}

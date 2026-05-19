@@ -15,9 +15,13 @@ CREATE TABLE IF NOT EXISTS journal_entries (
   mood VARCHAR(10) NOT NULL,
   body TEXT NOT NULL DEFAULT '',
   author VARCHAR(2) NOT NULL CHECK (author IN ('BK', 'Bi')),
+  is_pinned BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
+
+ALTER TABLE journal_entries
+  ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN NOT NULL DEFAULT false;
 
 -- Ảnh trong entry
 CREATE TABLE IF NOT EXISTS entry_photos (
@@ -53,6 +57,20 @@ CREATE TABLE IF NOT EXISTS plans (
   location VARCHAR(255),
   note TEXT,
   status VARCHAR(10) NOT NULL DEFAULT 'planned' CHECK (status IN ('planned', 'done', 'cancelled')),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Wishlist địa điểm / món ăn / chuyến đi muốn thử
+CREATE TABLE IF NOT EXISTS wishlist_places (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title VARCHAR(255) NOT NULL,
+  category VARCHAR(20) NOT NULL CHECK (category IN ('travel', 'food', 'cafe', 'stay', 'other')),
+  address TEXT,
+  description TEXT,
+  image_url TEXT,
+  map_url TEXT,
+  status VARCHAR(20) NOT NULL DEFAULT 'want_to_go' CHECK (status IN ('want_to_go', 'booked', 'visited', 'archived')),
+  created_by VARCHAR(2) CHECK (created_by IN ('BK', 'Bi')),
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -104,6 +122,7 @@ ALTER TABLE entry_photos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE plans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE wishlist_places ENABLE ROW LEVEL SECURITY;
 ALTER TABLE important_dates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE couple_prompts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE prompt_answers ENABLE ROW LEVEL SECURITY;
@@ -114,6 +133,7 @@ CREATE POLICY "auth_all" ON entry_photos FOR ALL TO authenticated USING (true) W
 CREATE POLICY "auth_all" ON reactions FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "auth_all" ON comments FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "auth_all" ON plans FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_all" ON wishlist_places FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "auth_all" ON important_dates FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "auth_all" ON couple_prompts FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "auth_all" ON prompt_answers FOR ALL TO authenticated USING (true) WITH CHECK (true);
@@ -125,12 +145,16 @@ CREATE POLICY "auth_all" ON gallery_photos FOR ALL TO authenticated USING (true)
 
 CREATE INDEX IF NOT EXISTS idx_journal_entries_date ON journal_entries(date DESC);
 CREATE INDEX IF NOT EXISTS idx_journal_entries_author ON journal_entries(author);
+CREATE INDEX IF NOT EXISTS idx_journal_entries_pinned ON journal_entries(is_pinned DESC, date DESC);
 CREATE INDEX IF NOT EXISTS idx_entry_photos_entry ON entry_photos(entry_id);
 CREATE INDEX IF NOT EXISTS idx_reactions_entry ON reactions(entry_id);
 CREATE INDEX IF NOT EXISTS idx_comments_entry ON comments(entry_id);
 CREATE INDEX IF NOT EXISTS idx_comments_date ON comments(created_at);
 CREATE INDEX IF NOT EXISTS idx_plans_date ON plans(date);
 CREATE INDEX IF NOT EXISTS idx_plans_status ON plans(status);
+CREATE INDEX IF NOT EXISTS idx_wishlist_places_category ON wishlist_places(category);
+CREATE INDEX IF NOT EXISTS idx_wishlist_places_status ON wishlist_places(status);
+CREATE INDEX IF NOT EXISTS idx_wishlist_places_created_at ON wishlist_places(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_prompts_date ON couple_prompts(date);
 CREATE INDEX IF NOT EXISTS idx_prompt_answers_prompt ON prompt_answers(prompt_id);
 CREATE INDEX IF NOT EXISTS idx_gallery_photos_date ON gallery_photos(date DESC);

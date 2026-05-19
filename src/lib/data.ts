@@ -25,6 +25,7 @@ export interface JournalEntry {
   body: string;
   photos: string[];
   author: Author;
+  isPinned: boolean;
   reactions: Reaction[];
   comments: Comment[];
 }
@@ -36,6 +37,10 @@ export interface Photo {
   height: number;
   caption: string;
   date: string;
+  entryId?: string;
+  entryTitle?: string;
+  entryMood?: string;
+  author?: Author;
 }
 
 export interface DateInfo {
@@ -59,6 +64,19 @@ export interface Plan {
   location?: string;
   note?: string;
   status: "planned" | "done" | "cancelled";
+}
+
+export interface WishlistPlace {
+  id: string;
+  title: string;
+  category: "travel" | "food" | "cafe" | "stay" | "other";
+  address?: string;
+  description?: string;
+  imageUrl?: string;
+  mapUrl?: string;
+  status: "want_to_go" | "booked" | "visited" | "archived";
+  createdBy?: Author;
+  createdAt?: string;
 }
 
 export interface PromptAnswer {
@@ -98,6 +116,7 @@ function mapEntry(row: Record<string, unknown>): JournalEntry {
     mood: row.mood as string,
     body: row.body as string,
     author: row.author as Author,
+    isPinned: Boolean(row.is_pinned),
     photos: Array.isArray(row.entry_photos)
       ? (row.entry_photos as { url: string }[]).map((p) => p.url)
       : [],
@@ -171,6 +190,7 @@ export async function getJournalEntries(): Promise<JournalEntry[]> {
   const { data, error } = await supabase()
     .from("journal_entries")
     .select("*, entry_photos(*), reactions(*), comments(*)")
+    .order("is_pinned", { ascending: false })
     .order("date", { ascending: false });
 
   if (error) throw error;
@@ -193,11 +213,11 @@ export async function getJournalEntry(
 export async function addJournalEntry(
   data: Omit<JournalEntry, "id" | "reactions" | "comments">
 ): Promise<JournalEntry> {
-  const { title, date, mood, body, photos, author } = data;
+  const { title, date, mood, body, photos, author, isPinned } = data;
 
   const { data: entry, error } = await supabase()
     .from("journal_entries")
-    .insert({ title, date, mood, body, author })
+    .insert({ title, date, mood, body, author, is_pinned: isPinned ?? false })
     .select("*")
     .single();
 
@@ -319,20 +339,69 @@ export async function addComment(
 // ─── Gallery Photos ───────────────────────────────────────────────────
 
 export async function getPhotos(): Promise<Photo[]> {
-  const { data, error } = await supabase()
-    .from("gallery_photos")
-    .select("*")
-    .order("date", { ascending: false });
+  const [entryPhotoResult, galleryPhotoResult] = await Promise.allSettled([
+    supabase()
+      .from("entry_photos")
+      .select("id, url, position, journal_entries!inner(id, title, mood, author, date)")
+      .order("position", { ascending: true }),
+    supabase()
+      .from("gallery_photos")
+      .select("*")
+      .order("date", { ascending: false }),
+  ]);
 
-  if (error) throw error;
-  return (data ?? []).map((p) => ({
-    id: p.id,
-    url: p.url,
-    width: p.width,
-    height: p.height,
-    caption: p.caption ?? "",
-    date: p.date,
-  }));
+  const entryPhotos =
+    entryPhotoResult.status === "fulfilled" && !entryPhotoResult.value.error
+      ? (entryPhotoResult.value.data ?? []).map((p) => {
+          const entry = Array.isArray(p.journal_entries)
+            ? p.journal_entries[0]
+            : p.journal_entries;
+
+          return {
+            id: `entry_${p.id}`,
+            url: p.url,
+            width: 600,
+            height: 800,
+            caption: (entry?.title as string | undefined) ?? "",
+            date: (entry?.date as string | undefined) ?? "",
+            entryId: (entry?.id as string | undefined) ?? undefined,
+            entryTitle: (entry?.title as string | undefined) ?? "",
+            entryMood: (entry?.mood as string | undefined) ?? undefined,
+            author: (entry?.author as Author | undefined) ?? undefined,
+          } satisfies Photo;
+        })
+      : [];
+
+  const galleryPhotos =
+    galleryPhotoResult.status === "fulfilled" && !galleryPhotoResult.value.error
+      ? (galleryPhotoResult.value.data ?? []).map((p) => ({
+          id: `gallery_${p.id}`,
+          url: p.url,
+          width: p.width,
+          height: p.height,
+          caption: p.caption ?? "",
+          date: p.date,
+        }))
+      : [];
+
+  return [...entryPhotos, ...galleryPhotos].sort((a, b) =>
+    new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+}
+
+export async function toggleJournalEntryPin(
+  id: string,
+  isPinned: boolean
+): Promise<JournalEntry | undefined> {
+  const { data, error } = await supabase()
+    .from("journal_entries")
+    .update({ is_pinned: isPinned })
+    .eq("id", id)
+    .select("*, entry_photos(*), reactions(*), comments(*)")
+    .single();
+
+  if (error) return undefined;
+  return mapEntry(data);
 }
 
 // ─── Plans ────────────────────────────────────────────────────────────
@@ -410,6 +479,103 @@ export async function updatePlan(
     location: data.location ?? undefined,
     note: data.note ?? undefined,
     status: data.status as Plan["status"],
+  };
+}
+
+// ─── Wishlist ────────────────────────────────────────────────────────
+
+export async function getWishlistPlaces(): Promise<WishlistPlace[]> {
+  const { data, error } = await supabase()
+    .from("wishlist_places")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []).map((item) => ({
+    id: item.id,
+    title: item.title,
+    category: item.category as WishlistPlace["category"],
+    address: item.address ?? undefined,
+    description: item.description ?? undefined,
+    imageUrl: item.image_url ?? undefined,
+    mapUrl: item.map_url ?? undefined,
+    status: item.status as WishlistPlace["status"],
+    createdBy: item.created_by as Author | undefined,
+    createdAt: item.created_at ?? undefined,
+  }));
+}
+
+export async function addWishlistPlace(
+  place: Omit<WishlistPlace, "id" | "createdAt">
+): Promise<WishlistPlace> {
+  const payload = {
+    title: place.title,
+    category: place.category,
+    address: place.address ?? null,
+    description: place.description ?? null,
+    image_url: place.imageUrl ?? null,
+    map_url: place.mapUrl ?? null,
+    status: place.status,
+    created_by: place.createdBy ?? null,
+  };
+
+  const { data, error } = await supabase()
+    .from("wishlist_places")
+    .insert(payload)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+
+  return {
+    id: data.id,
+    title: data.title,
+    category: data.category as WishlistPlace["category"],
+    address: data.address ?? undefined,
+    description: data.description ?? undefined,
+    imageUrl: data.image_url ?? undefined,
+    mapUrl: data.map_url ?? undefined,
+    status: data.status as WishlistPlace["status"],
+    createdBy: data.created_by as Author | undefined,
+    createdAt: data.created_at ?? undefined,
+  };
+}
+
+export async function updateWishlistPlace(
+  id: string,
+  updates: Partial<WishlistPlace>
+): Promise<WishlistPlace | undefined> {
+  const payload: Record<string, unknown> = {};
+
+  if (updates.title !== undefined) payload.title = updates.title;
+  if (updates.category !== undefined) payload.category = updates.category;
+  if (updates.address !== undefined) payload.address = updates.address ?? null;
+  if (updates.description !== undefined) payload.description = updates.description ?? null;
+  if (updates.imageUrl !== undefined) payload.image_url = updates.imageUrl ?? null;
+  if (updates.mapUrl !== undefined) payload.map_url = updates.mapUrl ?? null;
+  if (updates.status !== undefined) payload.status = updates.status;
+  if (updates.createdBy !== undefined) payload.created_by = updates.createdBy ?? null;
+
+  const { data, error } = await supabase()
+    .from("wishlist_places")
+    .update(payload)
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (error) return undefined;
+
+  return {
+    id: data.id,
+    title: data.title,
+    category: data.category as WishlistPlace["category"],
+    address: data.address ?? undefined,
+    description: data.description ?? undefined,
+    imageUrl: data.image_url ?? undefined,
+    mapUrl: data.map_url ?? undefined,
+    status: data.status as WishlistPlace["status"],
+    createdBy: data.created_by as Author | undefined,
+    createdAt: data.created_at ?? undefined,
   };
 }
 

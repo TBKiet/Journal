@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, Pencil, ChevronDown, ChevronUp } from "lucide-react";
+import { Trash2, Pencil, ChevronDown, ChevronUp, Pin, PinOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import {
   addReaction,
   addComment,
   getCurrentUser,
+  toggleJournalEntryPin,
   type JournalEntry,
   type Author,
 } from "@/lib/data";
@@ -103,6 +104,11 @@ export default function JournalPage() {
     await refresh();
   };
 
+  const handleTogglePin = async (entryId: string, isPinned: boolean) => {
+    await toggleJournalEntryPin(entryId, !isPinned);
+    await refresh();
+  };
+
   const allEntries = entries;
   const availableMonths = Array.from(
     new Map(
@@ -121,6 +127,7 @@ export default function JournalPage() {
       return true;
     });
     result = [...result].sort((a, b) => {
+      if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
       const dA = new Date(a.date).getTime();
       const dB = new Date(b.date).getTime();
       return sortMode === "newest" ? dB - dA : dA - dB;
@@ -129,26 +136,30 @@ export default function JournalPage() {
   }, [entries, monthFilter, moodFilter, authorFilter, sortMode]);
 
   return (
-    <div className="flex flex-col flex-1 max-w-2xl mx-auto w-full px-4 py-6 pb-24">
-      {/* Header */}
+    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-5 px-3 py-3 pb-24 sm:px-4 sm:py-4">
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="flex flex-col gap-3 mb-4"
+        className="paper-panel mb-1 flex flex-col gap-4 p-5 sm:p-6"
       >
-        <h1 className="text-2xl font-extrabold text-foreground">
-          📖 Nhật ký
-        </h1>
+        <div>
+          <p className="section-kicker">Diary</p>
+          <h1 className="mt-1 font-heading text-4xl tracking-[-0.04em] text-foreground">
+            Nhật ký
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            Mỗi entry là một mảnh ký ức. Lọc theo người viết, tâm trạng hoặc thời gian để xem lại từng đoạn của câu chuyện.
+          </p>
+        </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Author filter */}
-          <div className="flex items-center gap-1 rounded-full bg-muted p-0.5">
+          <div className="flex items-center gap-1 rounded-full border border-border/70 bg-background/80 p-1">
             {(["all", "BK", "Bi"] as const).map((filter) => (
               <button
                 key={filter}
                 onClick={() => setAuthorFilter(filter)}
                 className={cn(
-                  "px-3 py-1 rounded-full text-xs font-semibold transition-all",
+                  "rounded-full px-3 py-1.5 text-xs font-semibold transition-all",
                   authorFilter === filter
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
@@ -158,9 +169,7 @@ export default function JournalPage() {
               </button>
             ))}
           </div>
-          <span className="text-muted-foreground/30 text-sm">·</span>
-          {/* Sort */}
-          <div className="flex items-center gap-1 rounded-full bg-muted p-0.5">
+          <div className="flex items-center gap-1 rounded-full border border-border/70 bg-background/80 p-1">
             {([
               { value: "newest" as SortMode, label: "Mới nhất" },
               { value: "oldest" as SortMode, label: "Cũ nhất" },
@@ -169,7 +178,7 @@ export default function JournalPage() {
                 key={opt.value}
                 onClick={() => setSortMode(opt.value)}
                 className={cn(
-                  "px-3 py-1 rounded-full text-xs font-semibold transition-all",
+                  "rounded-full px-3 py-1.5 text-xs font-semibold transition-all",
                   sortMode === opt.value
                     ? "bg-secondary text-secondary-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
@@ -183,8 +192,7 @@ export default function JournalPage() {
       </motion.div>
 
       {/* Filters: Month & Mood */}
-      <div className="flex items-center gap-2 mb-6 overflow-x-auto scrollbar-none pb-1">
-        {/* Month filter */}
+      <div className="paper-panel mb-1 flex items-center gap-2 overflow-x-auto pb-1 p-3 scrollbar-none">
         <div className="flex items-center gap-1 shrink-0">
           {availableMonths.map(([key, label]) => (
             <Badge
@@ -200,13 +208,12 @@ export default function JournalPage() {
           ))}
         </div>
         <span className="text-muted-foreground/40 shrink-0">·</span>
-        {/* Mood filter */}
         <div className="flex items-center gap-1 shrink-0">
           {availableMoods.map((mood) => (
             <Badge
               key={mood}
               variant={moodFilter === mood ? "default" : "outline"}
-              className="cursor-pointer select-none text-base px-2"
+              className="cursor-pointer select-none px-2.5 text-base"
               onClick={() =>
                 setMoodFilter(moodFilter === mood ? null : mood)
               }
@@ -252,19 +259,18 @@ export default function JournalPage() {
           variants={fadeStagger.container}
           initial="hidden"
           animate="show"
-          className="flex flex-col gap-0 ml-4 relative"
+          className="relative ml-4 flex flex-col gap-0"
         >
-          {/* Timeline line */}
-          <div className="absolute left-0 top-0 bottom-0 w-px bg-border ml-[7px]" />
+          <div className="absolute bottom-0 left-0 top-0 ml-[8px] w-px bg-border/80" />
 
-          {filtered.map((entry, idx) => (
+          {filtered.map((entry) => (
             <motion.div
               key={entry.id}
               variants={fadeStagger.item}
               className="relative pl-8 pb-8 last:pb-0"
             >
               {/* Timeline dot */}
-              <div className="absolute left-0 top-6 w-[15px] h-[15px] rounded-full bg-primary ring-4 ring-background z-10 shadow-sm" />
+              <div className="absolute left-0 top-6 z-10 h-4 w-4 rounded-full bg-primary ring-4 ring-background shadow-sm" />
 
               <EntryCard
                 entry={entry}
@@ -281,6 +287,7 @@ export default function JournalPage() {
                   setCommentInput({ entryId: entry.id, text })
                 }
                 onCommentSubmit={() => handleComment(entry.id)}
+                onTogglePin={() => handleTogglePin(entry.id, entry.isPinned)}
                 onDelete={() => handleDelete(entry.id)}
               />
             </motion.div>
@@ -308,6 +315,7 @@ function EntryCard({
   commentInput,
   onCommentInputChange,
   onCommentSubmit,
+  onTogglePin,
   onDelete,
 }: {
   entry: JournalEntry;
@@ -318,6 +326,7 @@ function EntryCard({
   commentInput: { entryId: string; text: string } | null;
   onCommentInputChange: (text: string) => void;
   onCommentSubmit: () => void;
+  onTogglePin: () => void;
   onDelete: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -332,7 +341,7 @@ function EntryCard({
   return (
     <Card
       size="sm"
-      className="shadow-[0_4px_16px_oklch(0.25_0.02_45/0.06)] hover:shadow-[0_6px_20px_oklch(0.25_0.02_45/0.10)] transition-shadow"
+      className="bg-card/95 transition-transform hover:-translate-y-0.5"
     >
       <CardHeader>
         <div className="flex items-center gap-2.5">
@@ -345,16 +354,34 @@ function EntryCard({
             </CardTitle>
             <CardDescription className="text-xs flex items-center gap-1.5">
               <span>{formatDate(entry.date)}</span>
+              {entry.isPinned && (
+                <Badge className="h-5 gap-1 px-2 text-[0.62rem]">
+                  <Pin className="size-3" />
+                  Ghim
+                </Badge>
+              )}
               <Badge
                 variant="secondary"
-                className="text-[0.6rem] h-4 px-1.5"
+                className="h-5 px-2 text-[0.62rem]"
               >
                 {entry.author === "BK" ? "🧑 BK" : "🌸 Bi"}
               </Badge>
             </CardDescription>
-          </div>
+        </div>
           {isOwn && (
             <div className="flex items-center gap-0.5 shrink-0">
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={onTogglePin}
+                aria-label={entry.isPinned ? "Bỏ ghim bài viết" : "Ghim bài viết"}
+              >
+                {entry.isPinned ? (
+                  <PinOff className="size-3" />
+                ) : (
+                  <Pin className="size-3" />
+                )}
+              </Button>
               <Button
                 variant="ghost"
                 size="icon-xs"
@@ -376,7 +403,7 @@ function EntryCard({
       </CardHeader>
 
       <CardContent>
-        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+        <p className="text-sm text-muted-foreground leading-6 whitespace-pre-line">
           {displayBody}
           {isLong && (
             <button
@@ -408,7 +435,7 @@ function EntryCard({
                 src={url}
                 alt={`Ảnh ${i + 1}`}
                 className={cn(
-                  "rounded-lg object-cover bg-muted",
+                  "rounded-xl border border-border/60 bg-muted object-cover",
                   entry.photos.length === 1
                     ? "w-full max-h-64"
                     : i === 0 && entry.photos.length === 3
@@ -425,8 +452,7 @@ function EntryCard({
       </CardContent>
 
       {/* Reactions */}
-      <div className="px-4 flex flex-col gap-2">
-        {/* Existing reactions */}
+      <div className="flex flex-col gap-3 px-4 pb-1">
         {entry.reactions.length > 0 && (
           <div className="flex items-center gap-1 flex-wrap">
             {Object.entries(
@@ -438,10 +464,10 @@ function EntryCard({
                 acc[r.emoji].by.push(r.by);
                 return acc;
               }, {})
-            ).map(([key, { emoji, count, by }]) => (
+            ).map(([key, { emoji, count }]) => (
               <span
                 key={key}
-                className="inline-flex items-center gap-0.5 rounded-full bg-secondary/50 px-2 py-0.5 text-xs"
+                className="inline-flex items-center gap-0.5 rounded-full bg-secondary/60 px-2.5 py-1 text-xs"
               >
                 <span>{emoji}</span>
                 <span className="text-[0.6rem] text-muted-foreground">{count}</span>
@@ -450,8 +476,7 @@ function EntryCard({
           </div>
         )}
 
-        {/* Reaction + Comment actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 border-t border-border/60 pt-3">
           <button
             onClick={onToggleReactionPicker}
             className={cn(
@@ -481,20 +506,19 @@ function EntryCard({
           </button>
         </div>
 
-        {/* Reaction picker popup */}
         <AnimatePresence>
           {showReactionPicker && (
             <motion.div
               initial={{ opacity: 0, y: -4, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -4, scale: 0.95 }}
-              className="flex items-center gap-1 flex-wrap p-2 rounded-xl bg-popover ring-1 ring-foreground/10 shadow-[0_4px_12px_oklch(0.25_0.02_45/0.08)]"
+              className="flex flex-wrap items-center gap-1 rounded-2xl border border-border/70 bg-popover/95 p-2 shadow-[0_14px_28px_-20px_rgba(86,59,42,0.35)]"
             >
               {REACTION_EMOJIS.map((emoji) => (
                 <button
                   key={emoji}
                   onClick={() => onReaction(emoji)}
-                  className="text-lg p-1 rounded-lg hover:bg-muted transition-colors active:scale-110"
+                  className="rounded-lg p-1 text-lg transition-colors hover:bg-muted active:scale-110"
                 >
                   {emoji}
                 </button>
@@ -503,7 +527,6 @@ function EntryCard({
           )}
         </AnimatePresence>
 
-        {/* Comment input */}
         <AnimatePresence>
           {isCommenting && (
             <motion.div
@@ -534,11 +557,10 @@ function EntryCard({
           )}
         </AnimatePresence>
 
-        {/* Comments */}
         {entry.comments.length > 0 && (
-          <div className="border-t border-border/50 pt-2 flex flex-col gap-1.5">
+          <div className="flex flex-col gap-2 border-t border-border/50 pt-3">
             {entry.comments.slice(-3).map((c) => (
-              <div key={c.id} className="flex items-start gap-1.5">
+              <div key={c.id} className="flex items-start gap-2">
                 <Avatar size="sm">
                   <AvatarFallback className="text-[0.55rem] bg-secondary/70 text-secondary-foreground">
                     {c.by === "BK" ? "BK" : "Bi"}

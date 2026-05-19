@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowLeft, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,11 +18,26 @@ const statusOptions = [
 ] as const;
 
 export default function NewPlanPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewPlanForm />
+    </Suspense>
+  );
+}
+
+function NewPlanForm() {
   const router = useRouter();
-  const [title, setTitle] = useState("");
+  const searchParams = useSearchParams();
+  const prefill = useMemo(() => ({
+    title: searchParams.get("title") ?? "",
+    location: searchParams.get("location") ?? "",
+    text: searchParams.get("text") ?? "",
+  }), [searchParams]);
+
+  const [title, setTitle] = useState(prefill.title);
   const [date, setDate] = useState("");
-  const [location, setLocation] = useState("");
-  const [note, setNote] = useState("");
+  const [location, setLocation] = useState(prefill.location);
+  const [note, setNote] = useState(prefill.text);
   const [status, setStatus] = useState<"planned" | "done" | "cancelled">("planned");
   const [saving, setSaving] = useState(false);
 

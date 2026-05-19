@@ -31,7 +31,7 @@ function genId(prefix: string) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
-let journalEntries: JournalEntry[] = [
+const journalEntries: JournalEntry[] = [
   {
     id: '1',
     title: 'Buổi hẹn đầu tiên',
@@ -290,7 +290,7 @@ let plans: Plan[] = [
   },
 ];
 
-let dateEntries: DateInfo[] = [
+const dateEntries: DateInfo[] = [
   {
     id: "first-meet",
     emoji: "💫",
@@ -395,7 +395,7 @@ function getTodayStr(): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-let prompts: CouplePrompt[] = [
+const prompts: CouplePrompt[] = [
   {
     id: "prompt_1",
     question: "Khoảnh khắc nào trong ngày hôm nay khiến bạn nghĩ đến đối phương nhất?",

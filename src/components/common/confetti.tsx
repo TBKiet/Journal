@@ -16,6 +16,7 @@ interface Particle {
   x: number
   delay: number
   size: number
+  duration: number
 }
 
 let particleId = 0
@@ -33,12 +34,15 @@ export function Confetti({ trigger, duration = 3000 }: ConfettiProps) {
       x: Math.random() * 100,
       delay: Math.random() * 0.5,
       size: 1 + Math.random() * 1.5,
+      duration: 2.5 + Math.random(),
     }))
 
-    setParticles(newParticles)
-
-    const timer = setTimeout(() => setParticles([]), duration)
-    return () => clearTimeout(timer)
+    const showTimer = window.setTimeout(() => setParticles(newParticles), 0)
+    const hideTimer = window.setTimeout(() => setParticles([]), duration)
+    return () => {
+      window.clearTimeout(showTimer)
+      window.clearTimeout(hideTimer)
+    }
   }, [trigger, duration])
 
   return (
@@ -61,7 +65,7 @@ export function Confetti({ trigger, duration = 3000 }: ConfettiProps) {
             }}
             exit={{ opacity: 0 }}
             transition={{
-              duration: 2.5 + Math.random(),
+              duration: p.duration,
               delay: p.delay,
               ease: [0.25, 0.46, 0.45, 0.94],
             }}

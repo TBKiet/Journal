@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Trash2, Pencil, X } from "lucide-react";
+import { ArrowLeft, Trash2, Pencil, X, Pin, PinOff, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -16,6 +16,7 @@ import {
   addReaction,
   addComment,
   getCurrentUser,
+  toggleJournalEntryPin,
   type JournalEntry,
   type Author,
 } from "@/lib/data";
@@ -120,6 +121,14 @@ export default function EntryDetailPage() {
     router.push("/journal");
   };
 
+  const handleTogglePin = async () => {
+    const updated = await toggleJournalEntryPin(entry.id, !entry.isPinned);
+    if (updated) {
+      setEntry(updated);
+      forceUpdate();
+    }
+  };
+
   return (
     <div className="flex flex-col flex-1 max-w-2xl mx-auto w-full px-4 py-6">
       {/* Header */}
@@ -136,6 +145,9 @@ export default function EntryDetailPage() {
         </h1>
         {isOwn && (
           <div className="flex items-center gap-0.5">
+            <Button variant="ghost" size="icon-sm" onClick={handleTogglePin}>
+              {entry.isPinned ? <PinOff className="size-4" /> : <Pin className="size-4" />}
+            </Button>
             <Button variant="ghost" size="icon-sm" render={<Link href={`/journal/${entry.id}/edit`} />}>
                 <Pencil className="size-4" />
             </Button>
@@ -166,12 +178,20 @@ export default function EntryDetailPage() {
             <p className="text-sm text-muted-foreground">
               {formatDate(entry.date)}
             </p>
-            <Badge
-              variant="secondary"
-              className="w-fit text-xs"
-            >
-              {entry.author === "BK" ? "🧑 BK" : "🌸 Bi"}
-            </Badge>
+            <div className="flex items-center gap-2">
+              {entry.isPinned && (
+                <Badge className="w-fit gap-1 text-xs">
+                  <Pin className="size-3" />
+                  Kỷ niệm ghim
+                </Badge>
+              )}
+              <Badge
+                variant="secondary"
+                className="w-fit text-xs"
+              >
+                {entry.author === "BK" ? "🧑 BK" : "🌸 Bi"}
+              </Badge>
+            </div>
           </div>
         </div>
 
@@ -184,6 +204,14 @@ export default function EntryDetailPage() {
 
         {/* Photos */}
         {entry.photos.length > 0 && (
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground">Ảnh trong bài viết</h3>
+              <Button variant="ghost" size="sm" render={<Link href="/photos" />}>
+                <BookOpen className="size-3.5" />
+                Xem timeline ảnh
+              </Button>
+            </div>
           <div className="grid grid-cols-2 gap-2">
             {entry.photos.map((url, i) => (
               <button
@@ -211,6 +239,7 @@ export default function EntryDetailPage() {
                 />
               </button>
             ))}
+          </div>
           </div>
         )}
 

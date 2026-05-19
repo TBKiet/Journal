@@ -73,35 +73,42 @@ export default function PlansPage() {
   }, [refresh]);
 
   return (
-    <div className="flex flex-col gap-6 pb-24">
-      <motion.h1
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-5 px-3 py-3 pb-24 sm:px-4 sm:py-4">
+      <motion.div
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-2xl font-bold px-4 pt-4"
+        className="paper-panel flex flex-col gap-4 overflow-hidden p-5 sm:p-6"
       >
-        📋 Kế hoạch chung
-      </motion.h1>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="section-kicker">Shared plans</p>
+            <h1 className="mt-1 font-heading text-4xl tracking-[-0.04em]">Kế hoạch chung</h1>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
+              Những cuộc hẹn nhỏ, chuyến đi ngắn, hoặc bất kỳ điều gì cả hai muốn cùng nhau thực hiện.
+            </p>
+          </div>
+          <div className="rounded-full border border-border/70 bg-background/80 p-1">
+            <Button
+              variant={tab === "upcoming" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setTab("upcoming")}
+              className="rounded-full"
+            >
+              Sắp tới
+            </Button>
+            <Button
+              variant={tab === "done" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setTab("done")}
+              className="rounded-full"
+            >
+              Đã xong
+            </Button>
+          </div>
+        </div>
+      </motion.div>
 
-      <div className="flex gap-2 px-4">
-        <Button
-          variant={tab === "upcoming" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setTab("upcoming")}
-          className="rounded-full"
-        >
-          Sắp tới
-        </Button>
-        <Button
-          variant={tab === "done" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setTab("done")}
-          className="rounded-full"
-        >
-          Đã xong
-        </Button>
-      </div>
-
-      <div className="flex flex-col gap-3 px-4">
+      <div className="flex flex-col gap-3">
         <AnimatePresence mode="popLayout">
           {filtered.map((plan, idx) => (
             <motion.div
@@ -113,12 +120,12 @@ export default function PlansPage() {
               transition={{ delay: idx * 0.04, duration: 0.3 }}
             >
               <Card className="overflow-hidden">
-                <CardContent className="py-4">
+                <CardContent className="py-5">
                   <div className="flex items-start gap-3">
                     {plan.status === "planned" ? (
                       <button
                         onClick={() => handleMarkDone(plan)}
-                        className="mt-0.5 size-6 rounded-full border-2 border-muted-foreground/30 flex items-center justify-center shrink-0 hover:border-emerald-400 hover:bg-emerald-50 transition-colors dark:hover:bg-emerald-950/30"
+                        className="mt-1 flex size-7 shrink-0 items-center justify-center rounded-full border-2 border-muted-foreground/25 bg-background/80 transition-colors hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
                         aria-label="Đánh dấu đã xong"
                       >
                         {doneAnimId === plan.id ? (
@@ -134,27 +141,27 @@ export default function PlansPage() {
                     ) : plan.status === "done" ? (
                       <button
                         onClick={() => handleRevert(plan)}
-                        className="mt-0.5 size-6 rounded-full bg-emerald-100 border-2 border-emerald-400 flex items-center justify-center shrink-0 hover:bg-emerald-200 transition-colors dark:bg-emerald-900/30 dark:border-emerald-600"
+                        className="mt-1 flex size-7 shrink-0 items-center justify-center rounded-full border-2 border-emerald-400 bg-emerald-100 transition-colors hover:bg-emerald-200 dark:border-emerald-600 dark:bg-emerald-900/30"
                         aria-label="Đánh dấu chưa xong"
                       >
                         <Check className="size-3.5 text-emerald-600 dark:text-emerald-400" />
                       </button>
                     ) : (
-                      <span className="mt-0.5 size-6 rounded-full border-2 border-muted-foreground/15 flex items-center justify-center shrink-0 text-muted-foreground/40 text-xs">
+                      <span className="mt-1 flex size-7 shrink-0 items-center justify-center rounded-full border-2 border-muted-foreground/15 text-xs text-muted-foreground/40">
                         ✕
                       </span>
                     )}
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className={`font-semibold text-base ${plan.status === "cancelled" ? "line-through text-muted-foreground" : ""}`}>
+                        <p className={`font-heading text-xl tracking-[-0.02em] ${plan.status === "cancelled" ? "line-through text-muted-foreground" : ""}`}>
                           {plan.title}
                         </p>
                         <Badge className={statusBadge[plan.status].className}>
                           {statusBadge[plan.status].label}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-3 mt-1.5 text-sm text-muted-foreground">
+                      <div className="mt-2 flex items-center gap-3 text-sm text-muted-foreground">
                         <span>{plan.date}</span>
                         {plan.location && (
                           <span className="flex items-center gap-0.5">
@@ -179,7 +186,7 @@ export default function PlansPage() {
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center text-muted-foreground py-12"
+            className="paper-panel py-14 text-center text-muted-foreground"
           >
             {tab === "upcoming" ? "Chưa có kế hoạch nào~" : "Chưa có kế hoạch nào hoàn thành~"}
           </motion.p>
@@ -189,7 +196,7 @@ export default function PlansPage() {
       <Button
         onClick={() => router.push("/plans/new")}
         size="lg"
-        className="fixed bottom-6 right-6 rounded-full shadow-lg shadow-amber-400/30 h-14 w-14 p-0 z-40"
+        className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full p-0 md:bottom-8 md:right-8"
       >
         <Plus className="size-6" />
       </Button>
