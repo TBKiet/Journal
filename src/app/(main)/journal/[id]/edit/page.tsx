@@ -25,6 +25,7 @@ import {
   getJournalEntry,
   updateJournalEntry,
 } from "@/lib/data";
+import { uploadPhoto } from "@/lib/storage";
 
 const PRESET_MOODS = ["😊", "😢", "🥰", "😤", "😴"];
 const FULL_MOODS = [
@@ -43,6 +44,18 @@ type JournalDraft = {
   body: string;
 };
 
+type EditorPhoto =
+  | {
+      kind: "stored";
+      previewUrl: string;
+      storedUrl: string;
+    }
+  | {
+      kind: "new";
+      previewUrl: string;
+      file: File;
+    };
+
 export default function EditEntryPage() {
   const params = useParams();
   const router = useRouter();
@@ -51,7 +64,7 @@ export default function EditEntryPage() {
   const [date, setDate] = useState("");
   const [mood, setMood] = useState("");
   const [body, setBody] = useState("");
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<EditorPhoto[]>([]);
   const [moodPickerOpen, setMoodPickerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -92,7 +105,13 @@ export default function EditEntryPage() {
         setBody(initialEntry.body);
       }
 
-      setPhotos(entry.photos);
+      setPhotos(
+        entry.photos.map((url) => ({
+          kind: "stored",
+          previewUrl: url,
+          storedUrl: url,
+        }))
+      );
       setDraftHydrated(true);
       setLoading(false);
     });
@@ -104,7 +123,14 @@ export default function EditEntryPage() {
     if (!file.type.startsWith("image/")) return;
     const reader = new FileReader();
     reader.onload = () => {
-      setPhotos((p) => [...p, reader.result as string]);
+      setPhotos((current) => [
+        ...current,
+        {
+          kind: "new",
+          previewUrl: reader.result as string,
+          file,
+        },
+      ]);
     };
     reader.readAsDataURL(file);
   }, []);
@@ -158,16 +184,27 @@ export default function EditEntryPage() {
     }
 
     setSubmitting(true);
-    await updateJournalEntry(params.id as string, {
-      title: title.trim(),
-      date,
-      mood,
-      body: body.trim(),
-      photos,
-    });
-    clearSavedDraft();
-    setSubmitting(false);
-    router.push(`/journal/${params.id}`);
+    try {
+      const photoUrls = await Promise.all(
+        photos.map(async (photo) => {
+          if (photo.kind === "stored") return photo.storedUrl;
+          return uploadPhoto(photo.file);
+        })
+      );
+
+      await updateJournalEntry(params.id as string, {
+        title: title.trim(),
+        date,
+        mood,
+        body: body.trim(),
+        photos: photoUrls,
+      });
+      clearSavedDraft();
+      router.push(`/journal/${params.id}`);
+    } catch {
+      setError("Có lỗi khi lưu. Thử lại nha~");
+      setSubmitting(false);
+    }
   };
 
   const draftValue = useMemo<JournalDraft>(() => ({
@@ -358,10 +395,10 @@ export default function EditEntryPage() {
 
           {photos.length > 0 && (
             <div className="grid grid-cols-2 gap-2 mb-2">
-              {photos.map((url, idx) => (
+              {photos.map((photo, idx) => (
                 <div key={idx} className="relative group rounded-xl overflow-hidden bg-muted">
                   <img
-                    src={url}
+                    src={photo.previewUrl}
                     alt={`Ảnh ${idx + 1}`}
                     className="aspect-square object-cover w-full"
                   />
