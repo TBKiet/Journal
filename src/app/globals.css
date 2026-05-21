@@ -164,4 +164,89 @@
   .scrollbar-none::-webkit-scrollbar {
     display: none;
   }
+
+  .journal-editor__content,
+  .journal-editor__content .tiptap {
+    min-height: 260px;
+  }
+
+  .journal-editor__content .tiptap {
+    @apply text-foreground;
+  }
+
+  .journal-editor__content .tiptap p.is-editor-empty:first-child::before {
+    color: color-mix(in oklab, var(--muted-foreground) 78%, transparent);
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+
+  .journal-rich {
+    @apply text-base leading-8;
+  }
+
+  .journal-rich > * + * {
+    margin-top: 0.9rem;
+  }
+
+  .journal-rich p {
+    @apply text-foreground;
+  }
+
+  .journal-rich strong {
+    @apply font-bold text-foreground;
+  }
+
+  .journal-rich em {
+    font-style: italic;
+  }
+
+  .journal-rich s {
+    text-decoration: line-through;
+  }
+
+  .journal-rich blockquote {
+    @apply rounded-2xl border-l-4 border-primary/60 bg-primary/6 px-4 py-3 italic text-foreground;
+  }
+
+  .journal-rich ul,
+  .journal-rich ol {
+    padding-left: 1.35rem;
+  }
+
+  .journal-rich ul {
+    list-style: disc;
+  }
+
+  .journal-rich ol {
+    list-style: decimal;
+  }
+
+  .journal-rich h2,
+  .journal-rich h3 {
+    @apply font-heading text-foreground;
+  }
+
+  .journal-rich h2 {
+    @apply text-2xl tracking-[-0.03em];
+  }
+
+  .journal-rich h3 {
+    @apply text-xl tracking-[-0.02em];
+  }
+
+  .journal-rich mark {
+    padding: 0.08rem 0.2rem;
+    border-radius: 0.3rem;
+  }
+
+  .journal-rich img {
+    width: 100%;
+    border-radius: calc(var(--radius) * 1.1);
+    border: 1px solid color-mix(in oklab, var(--border) 78%, transparent);
+    background: color-mix(in oklab, var(--muted) 78%, white 22%);
+    object-fit: cover;
+    box-shadow: 0 18px 44px -30px rgba(101, 68, 46, 0.28);
+  }
 }

@@ -4,6 +4,7 @@ import { motion } from "framer-motion"
 import Link from "next/link"
 import { Card, CardHeader, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { getJournalPreviewText } from "@/lib/journal-rich-text"
 import { cn } from "@/lib/utils"
 
 interface EntryCardProps {
@@ -21,6 +22,7 @@ interface EntryCardProps {
 
 export function EntryCard({ entry, showFull = false }: EntryCardProps) {
   const { id, title, date, mood, body, photos, author } = entry
+  const previewBody = getJournalPreviewText(body)
 
   return (
     <motion.div
@@ -58,7 +60,7 @@ export function EntryCard({ entry, showFull = false }: EntryCardProps) {
                 showFull ? "whitespace-pre-wrap" : "line-clamp-3"
               )}
             >
-              {body}
+              {previewBody}
             </p>
 
             {photos.length > 0 && (

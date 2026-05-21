@@ -1,19 +1,19 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, X, ImagePlus } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { RichTextEditor } from "@/components/journal/rich-text-editor";
 import { cn } from "@/lib/utils";
 import {
   clearDraft,
@@ -21,6 +21,11 @@ import {
   readDraft,
   useDraftAutosave,
 } from "@/lib/draft-autosave";
+import {
+  extractJournalPhotoUrls,
+  mergeJournalBodyWithPhotos,
+  sanitizeJournalHtml,
+} from "@/lib/journal-rich-text";
 import {
   getJournalEntry,
   updateJournalEntry,
@@ -44,18 +49,6 @@ type JournalDraft = {
   body: string;
 };
 
-type EditorPhoto =
-  | {
-      kind: "stored";
-      previewUrl: string;
-      storedUrl: string;
-    }
-  | {
-      kind: "new";
-      previewUrl: string;
-      file: File;
-    };
-
 export default function EditEntryPage() {
   const params = useParams();
   const router = useRouter();
@@ -64,7 +57,6 @@ export default function EditEntryPage() {
   const [date, setDate] = useState("");
   const [mood, setMood] = useState("");
   const [body, setBody] = useState("");
-  const [photos, setPhotos] = useState<EditorPhoto[]>([]);
   const [moodPickerOpen, setMoodPickerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -86,7 +78,7 @@ export default function EditEntryPage() {
         title: entry.title,
         date: entry.date,
         mood: entry.mood,
-        body: entry.body,
+        body: mergeJournalBodyWithPhotos(entry.body, entry.photos),
       } satisfies JournalDraft;
 
       initialEntryRef.current = initialEntry;
@@ -104,72 +96,10 @@ export default function EditEntryPage() {
         setMood(initialEntry.mood);
         setBody(initialEntry.body);
       }
-
-      setPhotos(
-        entry.photos.map((url) => ({
-          kind: "stored",
-          previewUrl: url,
-          storedUrl: url,
-        }))
-      );
       setDraftHydrated(true);
       setLoading(false);
     });
   }, [params.id, draftKey]);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const processFile = useCallback((file: File) => {
-    if (!file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPhotos((current) => [
-        ...current,
-        {
-          kind: "new",
-          previewUrl: reader.result as string,
-          file,
-        },
-      ]);
-    };
-    reader.readAsDataURL(file);
-  }, []);
-
-  const handleFileChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = e.target.files;
-      if (files) {
-        Array.from(files).forEach(processFile);
-      }
-      e.target.value = "";
-    },
-    [processFile]
-  );
-
-  const addPhoto = () => {
-    fileInputRef.current?.click();
-  };
-
-  const removePhoto = (idx: number) => {
-    setPhotos((p) => p.filter((_, i) => i !== idx));
-  };
-
-  // Paste image support
-  useEffect(() => {
-    const handler = (e: ClipboardEvent) => {
-      const items = e.clipboardData?.items;
-      if (!items) return;
-      for (const item of Array.from(items)) {
-        if (item.type.startsWith("image/")) {
-          e.preventDefault();
-          const file = item.getAsFile();
-          if (file) processFile(file);
-        }
-      }
-    };
-    document.addEventListener("paste", handler);
-    return () => document.removeEventListener("paste", handler);
-  }, [processFile]);
 
   const handleSubmit = async () => {
     setError(null);
@@ -185,18 +115,14 @@ export default function EditEntryPage() {
 
     setSubmitting(true);
     try {
-      const photoUrls = await Promise.all(
-        photos.map(async (photo) => {
-          if (photo.kind === "stored") return photo.storedUrl;
-          return uploadPhoto(photo.file);
-        })
-      );
+      const sanitizedBody = sanitizeJournalHtml(body);
+      const photoUrls = extractJournalPhotoUrls(sanitizedBody);
 
       await updateJournalEntry(params.id as string, {
         title: title.trim(),
         date,
         mood,
-        body: body.trim(),
+        body: sanitizedBody,
         photos: photoUrls,
       });
       clearSavedDraft();
@@ -285,7 +211,7 @@ export default function EditEntryPage() {
                   : "Nháp chỉnh sửa sẽ tự động lưu trên thiết bị này"}
           </p>
           <p className="text-xs text-muted-foreground">
-            Lưu phần văn bản của bài viết. Ảnh hiện tại không được lưu vào nháp chỉnh sửa.
+            Lưu cả nội dung rich text và các ảnh inline đã chèn. Ảnh được upload ngay khi bạn thêm vào editor.
           </p>
         </div>
         {(savedAt || restoredAt) && (
@@ -369,63 +295,12 @@ export default function EditEntryPage() {
           <label className="text-sm font-semibold text-foreground">
             📝 Nội dung
           </label>
-          <Textarea
-            placeholder="Hôm nay tôi đã..."
+          <RichTextEditor
             value={body}
-            onChange={(e) => setBody(e.target.value)}
-            rows={6}
-            className="text-base leading-relaxed resize-y"
+            onChange={setBody}
+            onUploadImage={uploadPhoto}
+            placeholder="Viết, chèn ảnh, tô màu và làm cho trang nhật ký này giống một trang Notion riêng của hai bạn."
           />
-        </div>
-
-        {/* Photos */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-semibold text-foreground">
-            📸 Ảnh
-          </label>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleFileChange}
-            className="hidden"
-          />
-
-          {photos.length > 0 && (
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              {photos.map((photo, idx) => (
-                <div key={idx} className="relative group rounded-xl overflow-hidden bg-muted">
-                  <img
-                    src={photo.previewUrl}
-                    alt={`Ảnh ${idx + 1}`}
-                    className="aspect-square object-cover w-full"
-                  />
-                  <button
-                    onClick={() => removePhoto(idx)}
-                    className="absolute top-1 right-1 size-6 rounded-full bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="size-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={addPhoto}
-            className="flex flex-col items-center justify-center gap-2 py-6 px-4 rounded-xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-colors text-muted-foreground hover:text-primary"
-          >
-            <ImagePlus className="size-8" />
-            <span className="text-sm font-medium">
-              📸 Chọn ảnh từ thiết bị
-            </span>
-            <span className="text-xs text-muted-foreground/60">
-              Hoặc dán ảnh (Ctrl+V) vào đây
-            </span>
-          </button>
         </div>
 
         {/* Error */}

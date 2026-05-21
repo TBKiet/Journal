@@ -1,19 +1,19 @@
 "use client";
 
-import { Suspense, useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { Suspense, useState, useMemo, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, X, ImagePlus } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { RichTextEditor } from "@/components/journal/rich-text-editor";
 import { cn } from "@/lib/utils";
 import {
   clearDraft,
@@ -21,6 +21,10 @@ import {
   readDraft,
   useDraftAutosave,
 } from "@/lib/draft-autosave";
+import {
+  extractJournalPhotoUrls,
+  sanitizeJournalHtml,
+} from "@/lib/journal-rich-text";
 import {
   addJournalEntry,
   getCurrentUser,
@@ -102,14 +106,11 @@ function NewEntryForm() {
   const [date, setDate] = useState(baseDraft.date);
   const [mood, setMood] = useState(baseDraft.mood);
   const [body, setBody] = useState(baseDraft.body);
-  const [photos, setPhotos] = useState<string[]>([]);
   const [moodPickerOpen, setMoodPickerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [draftHydrated, setDraftHydrated] = useState(false);
   const [restoredAt, setRestoredAt] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const pendingFilesRef = useRef<File[]>([]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -147,56 +148,6 @@ function NewEntryForm() {
     enabled: draftHydrated && !submitting,
   });
 
-  const processFile = useCallback((file: File) => {
-    if (!file.type.startsWith("image/")) return;
-    pendingFilesRef.current.push(file);
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPhotos((p) => [...p, reader.result as string]);
-    };
-    reader.readAsDataURL(file);
-  }, []);
-
-  const handleFileChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = e.target.files;
-      if (files) {
-        Array.from(files).forEach(processFile);
-      }
-      e.target.value = "";
-    },
-    [processFile]
-  );
-
-  const addPhoto = () => {
-    fileInputRef.current?.click();
-  };
-
-  const removePhoto = (idx: number) => {
-    setPhotos((p) => p.filter((_, i) => i !== idx));
-    // Remove corresponding pending file (approximate — index-based)
-    if (idx < pendingFilesRef.current.length) {
-      pendingFilesRef.current.splice(idx, 1);
-    }
-  };
-
-  // Paste image support
-  useEffect(() => {
-    const handler = (e: ClipboardEvent) => {
-      const items = e.clipboardData?.items;
-      if (!items) return;
-      for (const item of Array.from(items)) {
-        if (item.type.startsWith("image/")) {
-          e.preventDefault();
-          const file = item.getAsFile();
-          if (file) processFile(file);
-        }
-      }
-    };
-    document.addEventListener("paste", handler);
-    return () => document.removeEventListener("paste", handler);
-  }, [processFile]);
-
   const handleSubmit = async () => {
     setError(null);
 
@@ -211,20 +162,15 @@ function NewEntryForm() {
 
     setSubmitting(true);
     try {
-      // Upload pending files to Supabase Storage
-      const uploadedUrls: string[] = [];
-      for (const file of pendingFilesRef.current) {
-        const url = await uploadPhoto(file);
-        uploadedUrls.push(url);
-      }
-      const allPhotoUrls = [...uploadedUrls];
+      const sanitizedBody = sanitizeJournalHtml(body);
+      const inlinePhotoUrls = extractJournalPhotoUrls(sanitizedBody);
 
       await addJournalEntry({
         title: title.trim(),
         date,
         mood,
-        body: body.trim(),
-        photos: allPhotoUrls,
+        body: sanitizedBody,
+        photos: inlinePhotoUrls,
         author: currentUser,
         isPinned: false,
       });
@@ -282,7 +228,7 @@ function NewEntryForm() {
                   : "Nháp sẽ tự động lưu trên thiết bị này"}
           </p>
           <p className="text-xs text-muted-foreground">
-            Lưu tiêu đề, ngày, mood và nội dung. Ảnh không được lưu vào nháp.
+            Lưu tiêu đề, ngày, mood và nội dung rich text. Ảnh chèn vào editor sẽ được giữ trong nháp dưới dạng URL đã upload.
           </p>
         </div>
         {(savedAt || restoredAt) && (
@@ -366,63 +312,12 @@ function NewEntryForm() {
           <label className="text-sm font-semibold text-foreground">
             📝 Nội dung
           </label>
-          <Textarea
-            placeholder="Hôm nay tôi đã..."
+          <RichTextEditor
             value={body}
-            onChange={(e) => setBody(e.target.value)}
-            rows={6}
-            className="text-base leading-relaxed resize-y"
+            onChange={setBody}
+            onUploadImage={uploadPhoto}
+            placeholder="Viết như một trang nhật ký thật đẹp. Bạn có thể tô đậm, đổi màu, highlight hoặc chèn ảnh ngay trong nội dung."
           />
-        </div>
-
-        {/* Photos */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-semibold text-foreground">
-            📸 Thêm ảnh
-          </label>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleFileChange}
-            className="hidden"
-          />
-
-          {photos.length > 0 && (
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              {photos.map((url, idx) => (
-                <div key={idx} className="relative group rounded-xl overflow-hidden bg-muted">
-                  <img
-                    src={url}
-                    alt={`Ảnh ${idx + 1}`}
-                    className="aspect-square object-cover w-full"
-                  />
-                  <button
-                    onClick={() => removePhoto(idx)}
-                    className="absolute top-1 right-1 size-6 rounded-full bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="size-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={addPhoto}
-            className="flex flex-col items-center justify-center gap-2 py-6 px-4 rounded-xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-colors text-muted-foreground hover:text-primary"
-          >
-            <ImagePlus className="size-8" />
-            <span className="text-sm font-medium">
-              📸 Chọn ảnh từ thiết bị
-            </span>
-            <span className="text-xs text-muted-foreground/60">
-              Hoặc dán ảnh (Ctrl+V) vào đây
-            </span>
-          </button>
         </div>
 
         {/* Error */}

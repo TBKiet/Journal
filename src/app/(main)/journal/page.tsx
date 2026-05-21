@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PersonAvatar } from "@/components/common/person-avatar";
+import { getJournalPreviewText } from "@/lib/journal-rich-text";
 import { cn } from "@/lib/utils";
 import {
   getJournalEntries,
@@ -329,9 +330,10 @@ function EntryCard({
   const [expanded, setExpanded] = useState(false);
   const isOwn = entry.author === currentUser;
   const bodyThreshold = 200;
-  const isLong = entry.body.length > bodyThreshold;
+  const previewBody = getJournalPreviewText(entry.body);
+  const isLong = previewBody.length > bodyThreshold;
   const displayBody =
-    isLong && !expanded ? entry.body.slice(0, bodyThreshold) + "..." : entry.body;
+    isLong && !expanded ? `${previewBody.slice(0, bodyThreshold)}...` : previewBody;
 
   const isCommenting = commentInput?.entryId === entry.id;
 

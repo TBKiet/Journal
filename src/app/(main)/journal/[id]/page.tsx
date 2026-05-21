@@ -4,11 +4,11 @@ import { useState, useCallback, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Trash2, Pencil, X, Pin, PinOff, BookOpen } from "lucide-react";
+import { ArrowLeft, Trash2, Pencil, Pin, PinOff, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PersonAvatar } from "@/components/common/person-avatar";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { JournalBody } from "@/components/journal/journal-body";
 import { cn } from "@/lib/utils";
 import {
   getJournalEntry,
@@ -58,7 +58,6 @@ export default function EntryDetailPage() {
   const [loading, setLoading] = useState(true);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [commentText, setCommentText] = useState("");
-  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 
   useEffect(() => {
     getCurrentUser().then(setCurrentUser);
@@ -197,49 +196,21 @@ export default function EntryDetailPage() {
 
         {/* Body */}
         <div className="bg-card rounded-2xl px-4 py-4 ring-1 ring-foreground/10">
-          <p className="text-base text-foreground leading-relaxed whitespace-pre-line">
-            {entry.body}
-          </p>
+          <JournalBody body={entry.body} className="text-foreground" />
         </div>
 
-        {/* Photos */}
         {entry.photos.length > 0 && (
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-foreground">Ảnh trong bài viết</h3>
-              <Button variant="ghost" size="sm" render={<Link href="/photos" />}>
-                <BookOpen className="size-3.5" />
-                Xem timeline ảnh
-              </Button>
+          <div className="flex items-center justify-between rounded-2xl border border-border/70 bg-card/70 px-4 py-3">
+            <div>
+              <p className="text-sm font-semibold text-foreground">Ảnh đã nằm trong nội dung nhật ký</p>
+              <p className="text-xs text-muted-foreground">
+                Entry này có {entry.photos.length} ảnh inline.
+              </p>
             </div>
-          <div className="grid grid-cols-2 gap-2">
-            {entry.photos.map((url, i) => (
-              <button
-                key={i}
-                onClick={() => setFullscreenImage(url)}
-                className={cn(
-                  "rounded-xl overflow-hidden bg-muted",
-                  entry.photos.length === 1 && "col-span-2",
-                  entry.photos.length === 3 && i === 0 && "col-span-2"
-                )}
-              >
-                <img
-                  src={url}
-                  alt={`Ảnh ${i + 1}`}
-                  className="object-cover w-full hover:scale-105 transition-transform duration-300"
-                  style={{
-                    aspectRatio:
-                      entry.photos.length === 1
-                        ? "16/10"
-                        : entry.photos.length === 3 && i === 0
-                          ? "16/9"
-                          : "1/1",
-                  }}
-                  loading="lazy"
-                />
-              </button>
-            ))}
-          </div>
+            <Button variant="ghost" size="sm" render={<Link href="/photos" />}>
+              <BookOpen className="size-3.5" />
+              Xem timeline ảnh
+            </Button>
           </div>
         )}
 
@@ -372,30 +343,6 @@ export default function EntryDetailPage() {
         </div>
       </motion.div>
 
-      {/* Fullscreen image dialog */}
-      <Dialog
-        open={fullscreenImage !== null}
-        onOpenChange={() => setFullscreenImage(null)}
-      >
-        <DialogContent
-          showCloseButton={false}
-          className="max-w-full max-h-full sm:max-w-[90vw] sm:max-h-[90vh] p-0 bg-black/95 rounded-2xl overflow-hidden"
-        >
-          <button
-            onClick={() => setFullscreenImage(null)}
-            className="absolute top-3 right-3 z-10 flex items-center justify-center size-9 rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors"
-          >
-            <X className="size-5" />
-          </button>
-          {fullscreenImage && (
-            <img
-              src={fullscreenImage}
-              alt="Ảnh kỷ niệm"
-              className="w-full h-full object-contain max-h-[90vh] rounded-2xl"
-            />
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
