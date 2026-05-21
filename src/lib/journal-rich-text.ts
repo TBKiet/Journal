@@ -46,6 +46,31 @@ function parseImageSourcesFromHtml(html: string) {
     .filter(Boolean);
 }
 
+function removeImagesFromHtml(html: string) {
+  if (typeof window === "undefined") {
+    return html.replace(/<img\b[^>]*>/gi, "");
+  }
+
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  doc.querySelectorAll("img").forEach((img) => img.remove());
+  return doc.body.innerHTML;
+}
+
+function decodeHtmlEntities(value: string) {
+  if (typeof window === "undefined") {
+    return value
+      .replaceAll("&nbsp;", " ")
+      .replaceAll("&amp;", "&")
+      .replaceAll("&lt;", "<")
+      .replaceAll("&gt;", ">")
+      .replaceAll("&quot;", '"')
+      .replaceAll("&#39;", "'");
+  }
+
+  return new DOMParser().parseFromString(value, "text/html").documentElement
+    .textContent ?? value;
+}
+
 export function plainTextToJournalHtml(value: string) {
   if (!value.trim()) return "<p></p>";
 
@@ -57,8 +82,19 @@ export function plainTextToJournalHtml(value: string) {
 
 export function sanitizeJournalHtml(value: string) {
   const source = isRichHtml(value) ? value : plainTextToJournalHtml(value);
+  const maybePurify = DOMPurify as unknown as {
+    sanitize?: (dirty: string, config?: Record<string, unknown>) => string;
+  };
+  const sanitize =
+    typeof maybePurify?.sanitize === "function"
+      ? maybePurify.sanitize.bind(maybePurify)
+      : null;
 
-  return DOMPurify.sanitize(source, {
+  if (!sanitize) {
+    return source;
+  }
+
+  return sanitize(source, {
     ALLOWED_TAGS: JOURNAL_ALLOWED_TAGS,
     ALLOWED_ATTR: JOURNAL_ALLOWED_ATTR,
     FORBID_TAGS: ["script", "style"],
@@ -68,20 +104,27 @@ export function sanitizeJournalHtml(value: string) {
 
 export function getJournalPlainText(value: string) {
   const html = sanitizeJournalHtml(value);
+  const normalized = html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|blockquote|h2|h3)>/gi, "\n\n")
+    .replace(/<li>/gi, "• ")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<\/(ul|ol)>/gi, "\n")
+    .replace(/<[^>]+>/g, " ");
 
-  if (typeof window === "undefined") {
-    return html
-      .replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<\/p>/gi, "\n\n")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\n{3,}/g, "\n\n")
-      .replace(/[ \t]+\n/g, "\n")
-      .replace(/\s{2,}/g, " ")
-      .trim();
-  }
+  return decodeHtmlEntities(normalized)
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
 
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  return (doc.body.textContent ?? "").replace(/\s+\n/g, "\n").trim();
+export function getJournalPreviewHtml(value: string) {
+  const html = sanitizeJournalHtml(value);
+  const previewHtml = removeImagesFromHtml(html).trim();
+
+  return previewHtml || "<p></p>";
 }
 
 export function getJournalPreviewText(value: string, maxLength?: number) {

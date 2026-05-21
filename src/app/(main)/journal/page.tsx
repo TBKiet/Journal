@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trash2, Pencil, ChevronDown, ChevronUp, Pin, PinOff } from "lucide-react";
+import { JournalBody } from "@/components/journal/journal-body";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -332,8 +333,6 @@ function EntryCard({
   const bodyThreshold = 200;
   const previewBody = getJournalPreviewText(entry.body);
   const isLong = previewBody.length > bodyThreshold;
-  const displayBody =
-    isLong && !expanded ? `${previewBody.slice(0, bodyThreshold)}...` : previewBody;
 
   const isCommenting = commentInput?.entryId === entry.id;
 
@@ -402,22 +401,24 @@ function EntryCard({
       </CardHeader>
 
       <CardContent>
-        <p className="text-sm text-muted-foreground leading-6 whitespace-pre-line">
-          {displayBody}
-          {isLong && (
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="ml-1 text-primary font-medium text-xs hover:underline inline-flex items-center gap-0.5"
-            >
-              {expanded ? "Thu gọn" : "Xem thêm"}
-              {expanded ? (
-                <ChevronUp className="size-3" />
-              ) : (
-                <ChevronDown className="size-3" />
-              )}
-            </button>
-          )}
-        </p>
+        <JournalBody
+          body={entry.body}
+          preview={!expanded}
+          className="text-sm leading-6 text-muted-foreground"
+        />
+        {isLong && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="mt-2 inline-flex items-center gap-0.5 text-xs font-medium text-primary hover:underline"
+          >
+            {expanded ? "Thu gọn" : "Xem thêm"}
+            {expanded ? (
+              <ChevronUp className="size-3" />
+            ) : (
+              <ChevronDown className="size-3" />
+            )}
+          </button>
+        )}
 
         {entry.photos.length > 0 && (
           <div

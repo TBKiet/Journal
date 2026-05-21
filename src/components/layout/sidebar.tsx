@@ -1,5 +1,6 @@
 "use client"
 
+import { useSyncExternalStore } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
@@ -9,9 +10,20 @@ import { useTheme } from "@/components/theme-provider"
 import { navigationTabs } from "./nav-config"
 import { PersonAvatar } from "@/components/common/person-avatar"
 
+function subscribe() {
+  return () => {};
+}
+
 export function Sidebar() {
   const pathname = usePathname()
   const { theme, toggle } = useTheme()
+  const mounted = useSyncExternalStore(subscribe, () => true, () => false)
+
+  const themeLabel = !mounted
+    ? "Đổi giao diện"
+    : theme === "dark"
+      ? "Chuyển sang sáng"
+      : "Chuyển sang tối"
 
   return (
     <aside className="fixed left-0 top-0 bottom-0 z-40 hidden w-72 p-4 md:flex">
@@ -61,10 +73,10 @@ export function Sidebar() {
             <button
               onClick={toggle}
               className="mt-3 flex w-full items-center justify-between rounded-xl border border-sidebar-border/70 px-3 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent/60"
-              aria-label="Toggle dark mode"
+              aria-label={themeLabel}
             >
-              <span>{theme === "dark" ? "Chuyển sang sáng" : "Chuyển sang tối"}</span>
-              {theme === "dark" ? (
+              <span>{themeLabel}</span>
+              {mounted && theme === "dark" ? (
                 <Sun className="size-4" />
               ) : (
                 <Moon className="size-4" />

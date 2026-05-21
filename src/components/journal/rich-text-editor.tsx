@@ -54,14 +54,24 @@ const HIGHLIGHT_COLORS = [
 function ToolbarButton({
   active,
   className,
+  onPointerDown,
   ...props
-}: React.ComponentProps<typeof Button> & { active?: boolean }) {
+}: React.ComponentProps<"button"> & { active?: boolean }) {
   return (
-    <Button
+    <button
       type="button"
-      variant={active ? "secondary" : "ghost"}
-      size="icon-sm"
-      className={cn("shrink-0", className)}
+      className={cn(
+        "inline-flex size-8 shrink-0 items-center justify-center rounded-[min(var(--radius-md),12px)] border text-foreground transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
+        active
+          ? "border-border/80 bg-secondary text-secondary-foreground shadow-sm"
+          : "border-transparent hover:bg-muted hover:text-foreground",
+        className
+      )}
+      aria-pressed={active}
+      onPointerDown={(event) => {
+        event.preventDefault();
+        onPointerDown?.(event);
+      }}
       {...props}
     />
   );
@@ -169,152 +179,182 @@ export function RichTextEditor({
   if (!editor) return null;
 
   return (
-    <div className="rounded-[1.4rem] border border-border/70 bg-card/95 shadow-[0_18px_44px_-30px_rgba(101,68,46,0.18)]">
-      <div className="flex flex-wrap items-center gap-1 border-b border-border/70 px-3 py-2.5">
-        <ToolbarButton
-          active={editor.isActive("bold")}
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          aria-label="Tô đậm"
-        >
-          <Bold className="size-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          active={editor.isActive("italic")}
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          aria-label="In nghiêng"
-        >
-          <Italic className="size-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          active={editor.isActive("strike")}
-          onClick={() => editor.chain().focus().toggleStrike().run()}
-          aria-label="Gạch ngang"
-        >
-          <Strikethrough className="size-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          active={editor.isActive("bulletList")}
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          aria-label="Danh sách chấm"
-        >
-          <List className="size-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          active={editor.isActive("orderedList")}
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          aria-label="Danh sách số"
-        >
-          <ListOrdered className="size-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          active={editor.isActive("blockquote")}
-          onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          aria-label="Trích dẫn"
-        >
-          <Quote className="size-4" />
-        </ToolbarButton>
-
-        <Popover>
-          <PopoverTrigger render={<ToolbarButton aria-label="Màu chữ" />}>
-            <Type className="size-4" />
-          </PopoverTrigger>
-          <PopoverContent className="w-56 gap-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              Màu chữ
-            </p>
-            <div className="grid grid-cols-6 gap-2">
-              {TEXT_COLORS.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  className="size-7 rounded-full ring-1 ring-border"
-                  style={{ backgroundColor: color }}
-                  onClick={() => editor.chain().focus().setColor(color).run()}
-                  aria-label={`Chọn màu ${color}`}
-                />
-              ))}
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => editor.chain().focus().unsetColor().run()}
-            >
-              Xóa màu chữ
-            </Button>
-          </PopoverContent>
-        </Popover>
-
-        <Popover>
-          <PopoverTrigger render={<ToolbarButton aria-label="Màu nền" />}>
-            <Highlighter className="size-4" />
-          </PopoverTrigger>
-          <PopoverContent className="w-56 gap-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              Highlight
-            </p>
-            <div className="grid grid-cols-6 gap-2">
-              {HIGHLIGHT_COLORS.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  className="size-7 rounded-full ring-1 ring-border"
-                  style={{ backgroundColor: color }}
-                  onClick={() => editor.chain().focus().toggleHighlight({ color }).run()}
-                  aria-label={`Highlight ${color}`}
-                />
-              ))}
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => editor.chain().focus().unsetHighlight().run()}
-            >
-              Xóa highlight
-            </Button>
-          </PopoverContent>
-        </Popover>
-
-        <ToolbarButton
-          onClick={() => fileInputRef.current?.click()}
-          aria-label="Chèn ảnh"
-          className="ml-auto"
-        >
-          <ImagePlus className="size-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().undo().run()}
-          aria-label="Undo"
-        >
-          <Undo2 className="size-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().redo().run()}
-          aria-label="Redo"
-        >
-          <Redo2 className="size-4" />
-        </ToolbarButton>
+    <div className="rounded-[1.55rem] border border-border/70 bg-card/95 shadow-[0_18px_44px_-30px_rgba(101,68,46,0.18)] transition-shadow focus-within:shadow-[0_24px_52px_-34px_rgba(101,68,46,0.32)]">
+      <div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Khung viết nhật ký</p>
+          <p className="text-xs text-muted-foreground">
+            Giữ màu, quote, danh sách và ảnh khi lên trang xem.
+          </p>
+        </div>
+        <div className="rounded-full bg-muted/70 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          Rich text
+        </div>
       </div>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        onChange={handleImagePickerChange}
-        className="hidden"
-      />
+      <div className="border-b border-border/70 bg-background/65 px-3 py-2">
+        <div className="scrollbar-none flex items-center gap-1 overflow-x-auto">
+          <ToolbarButton
+            active={editor.isActive("bold")}
+            onPointerDown={() => editor.chain().focus().toggleBold().run()}
+            aria-label="Tô đậm"
+            title="Tô đậm"
+          >
+            <Bold className="size-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            active={editor.isActive("italic")}
+            onPointerDown={() => editor.chain().focus().toggleItalic().run()}
+            aria-label="In nghiêng"
+            title="In nghiêng"
+          >
+            <Italic className="size-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            active={editor.isActive("strike")}
+            onPointerDown={() => editor.chain().focus().toggleStrike().run()}
+            aria-label="Gạch ngang"
+            title="Gạch ngang"
+          >
+            <Strikethrough className="size-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            active={editor.isActive("bulletList")}
+            onPointerDown={() => editor.chain().focus().toggleList("bulletList", "listItem").run()}
+            aria-label="Gạch đầu dòng"
+            title="Gạch đầu dòng"
+          >
+            <List className="size-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            active={editor.isActive("orderedList")}
+            onPointerDown={() => editor.chain().focus().toggleList("orderedList", "listItem").run()}
+            aria-label="Danh sách số"
+            title="Danh sách số"
+          >
+            <ListOrdered className="size-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            active={editor.isActive("blockquote")}
+            onPointerDown={() => editor.chain().focus().toggleWrap("blockquote").run()}
+            aria-label="Trích dẫn"
+            title="Trích dẫn"
+          >
+            <Quote className="size-4" />
+          </ToolbarButton>
 
-      <div onPasteCapture={handlePasteCapture}>
-        <EditorContent editor={editor} />
+          <Popover>
+            <PopoverTrigger render={<ToolbarButton aria-label="Màu chữ" title="Màu chữ" />}>
+              <Type className="size-4" />
+            </PopoverTrigger>
+            <PopoverContent className="w-56 gap-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Màu chữ
+              </p>
+              <div className="grid grid-cols-6 gap-2">
+                {TEXT_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    className="size-7 rounded-full ring-1 ring-border"
+                    style={{ backgroundColor: color }}
+                    onClick={() => editor.chain().focus().setColor(color).run()}
+                    aria-label={`Chọn màu ${color}`}
+                  />
+                ))}
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => editor.chain().focus().unsetColor().run()}
+              >
+                Xóa màu chữ
+              </Button>
+            </PopoverContent>
+          </Popover>
+
+          <Popover>
+            <PopoverTrigger render={<ToolbarButton aria-label="Màu nền" title="Highlight" />}>
+              <Highlighter className="size-4" />
+            </PopoverTrigger>
+            <PopoverContent className="w-56 gap-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Highlight
+              </p>
+              <div className="grid grid-cols-6 gap-2">
+                {HIGHLIGHT_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    className="size-7 rounded-full ring-1 ring-border"
+                    style={{ backgroundColor: color }}
+                    onClick={() => editor.chain().focus().toggleHighlight({ color }).run()}
+                    aria-label={`Highlight ${color}`}
+                  />
+                ))}
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => editor.chain().focus().unsetHighlight().run()}
+              >
+                Xóa highlight
+              </Button>
+            </PopoverContent>
+          </Popover>
+
+          <div className="mx-1 h-6 w-px shrink-0 bg-border/80" />
+
+          <ToolbarButton
+            onPointerDown={() => fileInputRef.current?.click()}
+            aria-label="Chèn ảnh"
+            title="Chèn ảnh"
+          >
+            <ImagePlus className="size-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onPointerDown={() => editor.chain().focus().undo().run()}
+            aria-label="Undo"
+            title="Undo"
+            disabled={!editor.can().chain().focus().undo().run()}
+          >
+            <Undo2 className="size-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onPointerDown={() => editor.chain().focus().redo().run()}
+            aria-label="Redo"
+            title="Redo"
+            disabled={!editor.can().chain().focus().redo().run()}
+          >
+            <Redo2 className="size-4" />
+          </ToolbarButton>
+        </div>
       </div>
 
-      <div className="flex items-center justify-between border-t border-border/70 px-4 py-2.5 text-xs text-muted-foreground">
+      <div className="px-1 py-1.5">
+        <div className="rounded-[1.2rem] bg-background/55">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleImagePickerChange}
+            className="hidden"
+          />
+
+          <div onPasteCapture={handlePasteCapture}>
+            <EditorContent editor={editor} />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/70 px-4 py-2.5 text-xs text-muted-foreground">
         <span>
-          Chèn ảnh ngay trong nội dung bằng nút ảnh hoặc dán trực tiếp vào editor.
+          Dán ảnh trực tiếp hoặc dùng nút ảnh. List, quote và màu sẽ được giữ nguyên khi xem lại.
         </span>
-        <span>{uploading ? "Đang upload ảnh..." : "Rich journal"}</span>
+        <span>{uploading ? "Đang upload ảnh..." : "Sẵn sàng để viết"}</span>
       </div>
     </div>
   );

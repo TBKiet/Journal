@@ -4,10 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Pin } from "lucide-react";
+import { JournalBody } from "@/components/journal/journal-body";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getJournalPreviewText } from "@/lib/journal-rich-text";
 import { cn } from "@/lib/utils";
 import { getCurrentUser, getTodayPrompt, getJournalEntries, getWishlistPlaces, type JournalEntry, type WishlistPlace, type CouplePrompt } from "@/lib/data";
 
@@ -199,7 +199,11 @@ export default function HomePage() {
                           </div>
                         </CardHeader>
                         <CardContent>
-                        <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">{getJournalPreviewText(entry.body)}</p>
+                          <JournalBody
+                            body={entry.body}
+                            preview
+                            className="text-sm leading-6 text-muted-foreground"
+                          />
                         </CardContent>
                       </Card>
                     </Link>
@@ -267,7 +271,11 @@ export default function HomePage() {
                         </div>
                       </CardHeader>
                       <CardContent>
-                        <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">{getJournalPreviewText(entry.body)}</p>
+                        <JournalBody
+                          body={entry.body}
+                          preview
+                          className="text-sm leading-6 text-muted-foreground"
+                        />
                         {entry.photos.length > 0 && (
                           <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
                             <span className="rounded-full bg-secondary px-2 py-1 text-secondary-foreground">Có {entry.photos.length} ảnh</span>

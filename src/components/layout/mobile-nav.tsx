@@ -1,5 +1,6 @@
 "use client"
 
+import { useSyncExternalStore } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
@@ -8,19 +9,30 @@ import { useTheme } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
 import { navigationTabs } from "./nav-config"
 
+function subscribe() {
+  return () => {};
+}
+
 export function MobileNav() {
   const pathname = usePathname()
   const { theme, toggle } = useTheme()
+  const mounted = useSyncExternalStore(subscribe, () => true, () => false)
+
+  const themeLabel = !mounted
+    ? "Đổi giao diện"
+    : theme === "dark"
+      ? "Chuyển sang sáng"
+      : "Chuyển sang tối"
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
       <div className="pointer-events-none mx-auto flex w-[min(100%-1.5rem,38rem)] justify-end px-1">
         <button
           onClick={toggle}
-          aria-label={theme === "dark" ? "Chuyển sang sáng" : "Chuyển sang tối"}
+          aria-label={themeLabel}
           className="pointer-events-auto mb-2 mr-2 inline-flex size-11 items-center justify-center rounded-full border border-border/80 bg-card/90 text-foreground shadow-[0_16px_35px_-24px_rgba(86,59,42,0.55)] backdrop-blur-xl transition-colors hover:bg-card"
         >
-          {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+          {mounted && theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
         </button>
       </div>
 
